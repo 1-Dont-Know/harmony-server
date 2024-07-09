@@ -177,6 +177,7 @@ async function listEventsByDate(calendarName, date) {
   });
 
   const events = res.data.items;
+  console.log(events);
   const upcomingEvents = [];
 
   if (!events || events.length === 0) {
@@ -186,8 +187,10 @@ async function listEventsByDate(calendarName, date) {
   events.forEach((event, i) => {
     const start = event.start.dateTime || event.start.date;
     upcomingEvents.push({
+        team: event.organizer.displayName,
         name: event.summary,
-        date: start,
+        start: event.start.dateTime,
+        end: event.end.dateTime,
         description: event.description || ''
     });
   });
