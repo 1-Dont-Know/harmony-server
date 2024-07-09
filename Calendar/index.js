@@ -13,10 +13,10 @@ const sampleEvent = {
     'summary': 'Edited Once Again',
     'description': 'Sample edited event description - created by Harmony APP',
     'start': {
-      'dateTime': '2024-03-14T08:00:00-07:00',
+      'dateTime': '2024-07-01T08:00:00-07:00',
     },
     'end': {
-      'dateTime': '2024-03-14T09:00:00-07:00',
+      'dateTime': '2024-07-01T09:00:00-07:00',
     },
 };
 
@@ -73,18 +73,23 @@ async function getCalendarIdByName(calendarName) {
 }
 // Get event's ID for use in other functions by inputting its name.
 async function getEventIdByName(calendarName, eventName) {
+  // console.log('calendarName:',calendarName);
+  // console.log('eventName:',eventName);
   const calendarIdObject = await getCalendarIdByName(calendarName);
+  // console.log(calendarIdObject);
   const calendarId = calendarIdObject.id
+  // console.log(calendarId);
   const auth = await authorize(); // Assuming `authorize()` returns the authenticated client
   const calendar = google.calendar({ version: 'v3', auth });
   const res = await calendar.events.list({
     calendarId: calendarId,
-    timeMin: new Date().toISOString(),
+    // timeMin: new Date().toISOString(),
     maxResults: 20,
     singleEvents: true,
     orderBy: 'startTime',
   });
   const events = res.data.items;
+  console.log(res.data.items);
   const targetEvent = events.find((event) => event.summary === eventName);
   if (!targetEvent) {
     throw new Error('Event not found');
@@ -125,6 +130,7 @@ async function createCalendar(groupName) {
 }
 // Lists upcoming events on the selected calendar.
 async function listEvents(calendarName) {
+  console.log('test log:',new Date().toISOString());
   const calendarIdObject = await getCalendarIdByName(calendarName);
   const calendarId = calendarIdObject.id;
   const auth = await authorize(); // Assuming `authorize()` returns the authenticated client
@@ -174,7 +180,7 @@ async function listEventsByDate(calendarName, date) {
   const upcomingEvents = [];
 
   if (!events || events.length === 0) {
-      return { error: 'No upcoming events found.' };
+      return { error: 'No events on this date found.' };
   }
 
   events.forEach((event, i) => {
@@ -189,6 +195,9 @@ async function listEventsByDate(calendarName, date) {
 }
 // Creates event on the selected calendar.
 async function createEvent(calendarName, event) {
+    console.log('Calendar Name From Client: ', calendarName);
+    console.log('Raw Event From Client:', event);
+    
     const processedEvent = {
       
         'summary': event.name,
@@ -200,6 +209,9 @@ async function createEvent(calendarName, event) {
           'dateTime': `${event.date.slice(0,10)}T${event.endTime}:00-07:00`,
         },
     }
+
+    console.log('PROCESSED EVENT:' , processedEvent);
+
     const auth = await authorize();
     const calendarIdObject = await getCalendarIdByName(calendarName)
     const calendarId = calendarIdObject.id;
@@ -211,7 +223,7 @@ async function createEvent(calendarName, event) {
             resource: processedEvent,
             }, function(err, processedEvent) {
             if (err) {
-                console.log(err.message);
+                console.log(err);
                 throw new Error('err')
             }
             });
@@ -240,6 +252,7 @@ async function editEvent(calendarName, eventName, updatedEvent) {
 // Deletes event from the selected calendar.
 async function deleteEvent(calendarName, eventName) {
     const eventIdObject = await getEventIdByName(calendarName, eventName)
+    console.log('eventIdObject:', eventIdObject);
     const eventId = eventIdObject.id;
     const calendarIdObject = await getCalendarIdByName(calendarName)
     const calendarId = calendarIdObject.id;
@@ -266,7 +279,7 @@ module.exports = {
     deleteEvent
 };
 
-// createEvent('group1', sampleEvent)
+// createEvent('Test Team 1', sampleEvent)
 // listEvents('group2')
 // deleteEvent('group1', 'CREATED BY HARMONY APP')
 // listCalendars()

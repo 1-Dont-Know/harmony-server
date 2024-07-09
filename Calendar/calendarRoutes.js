@@ -96,12 +96,14 @@ router.put('/editevent', async (req, res) => {
 })
 
 router.delete('/deleteevent', async (req, res) => {
+    console.log('/deleteevent accessed');
+    console.log(req.body);
     try {
         await deleteEvent(req.body.calendar, req.body.eventName);
-        console.log('/deleteevent accessed');
         res.json({message: `event deleted successfully from '${req.body.calendar}'`});
     } catch (error) {
         res.status(500).json({ error: error.message });
+        console.log(error);
     }
 })
 
