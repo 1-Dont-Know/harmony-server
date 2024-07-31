@@ -8,8 +8,9 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 });
-const db = drizzle(pool, {schema, mode: "default"});
+const db = drizzle(pool, { schema, mode: "default" });
 
 module.exports = {
   db,
-}
+  tables: schema,
+};
