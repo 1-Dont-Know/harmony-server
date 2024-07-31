@@ -2,11 +2,13 @@ const {
   serial,
   varchar,
   tinyint,
-  mysqlTable,
   int,
   varbinary,
   timestamp,
+  mysqlTableCreator,
 } = require("drizzle-orm/mysql-core");
+
+const mysqlTable = mysqlTableCreator((name) => `harmony_${name}`);
 
 const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
@@ -23,7 +25,7 @@ const files = mysqlTable("files", {
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
   ownerID: int("ownerID"),
-  data: varbinary("data"),
+  data: varbinary("data", { length: 1024 }),
   deleted: tinyint("deleted"),
 });
 

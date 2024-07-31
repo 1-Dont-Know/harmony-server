@@ -33,6 +33,7 @@
     "socket.io": "^4.7.4"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "drizzle-kit": "^0.23.1"
   }
 }
