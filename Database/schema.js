@@ -6,11 +6,17 @@ const {
   varbinary,
   timestamp,
   mysqlTableCreator,
+  mysqlTable,
 } = require("drizzle-orm/mysql-core");
 
-const mysqlTable = mysqlTableCreator((name) => `harmony_${name}`);
+const table =
+  process.env.VERCEL_ENV === "production"
+    ? mysqlTableCreator((name) => `harmony_${name}`)
+    : mysqlTable;
 
-const users = mysqlTable("users", {
+// const mysqlTable = mysqlTableCreator((name) => `harmony_${name}`);
+
+const users = table("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }),
   username: varchar("username", { length: 255 }),
@@ -20,7 +26,7 @@ const users = mysqlTable("users", {
   deleted: tinyint("deleted"),
 });
 
-const files = mysqlTable("files", {
+const files = table("files", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
@@ -29,7 +35,7 @@ const files = mysqlTable("files", {
   deleted: tinyint("deleted"),
 });
 
-const requests = mysqlTable("requests", {
+const requests = table("requests", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   timeCreated: timestamp("timeCreated").defaultNow(),
@@ -42,7 +48,7 @@ const requests = mysqlTable("requests", {
   timeResolved: timestamp("timeResolved"),
 });
 
-const teams = mysqlTable("teams", {
+const teams = table("teams", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
@@ -52,7 +58,7 @@ const teams = mysqlTable("teams", {
   deleted: tinyint("deleted"),
 });
 
-const teamsChats = mysqlTable("teamschats", {
+const teamsChats = table("teamschats", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   ownerID: int("ownerID"),
@@ -61,14 +67,14 @@ const teamsChats = mysqlTable("teamschats", {
   deleted: tinyint("deleted"),
 });
 
-const teamsLinks = mysqlTable("teamslinks", {
+const teamsLinks = table("teamslinks", {
   id: serial("id").primaryKey(),
   teamID: int("teamID"),
   addUser: int("addUser"),
   deleted: tinyint("deleted"),
 });
 
-const usersChats = mysqlTable("userschats", {
+const usersChats = table("userschats", {
   id: serial("id").primaryKey(),
   userSender: int("userSender"),
   userReceiver: int("userReceiver"),
@@ -79,13 +85,24 @@ const usersChats = mysqlTable("userschats", {
   deleted: tinyint("deleted"),
 });
 
-const usersLinks = mysqlTable("userslinks", {
+const usersLinks = table("userslinks", {
   id: serial("id").primaryKey(),
   userID1: int("userID1"),
   userID2: int("userID2"),
   blocked: tinyint("blocked"),
   deleted: tinyint("deleted"),
 });
+
+/**
+ * @typedef {typeof users.$inferSelect} User
+ * @typedef {typeof files.$inferSelect} File
+ * @typedef {typeof requests.$inferSelect} Request
+ * @typedef {typeof teams.$inferSelect} Team
+ * @typedef {typeof teamsChats.$inferSelect} TeamChat
+ * @typedef {typeof teamsLinks.$inferSelect} TeamLink
+ * @typedef {typeof usersChats.$inferSelect} UserChat
+ * @typedef {typeof usersLinks.$inferSelect} UserLink
+ */
 
 module.exports = {
   users,
