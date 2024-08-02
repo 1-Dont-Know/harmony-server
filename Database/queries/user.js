@@ -29,7 +29,38 @@ async function createUser({ email, username, hashedPassword, userCallLink }) {
   });
 }
 
+async function setDeleteUser(userID){
+  await db.update(tables.users)
+    .set({deleted: true})
+    .where(
+      and(
+        eq(tables.users.email, req.user.email),
+        eq(tables.users.deleted, false)
+        )
+      );
+    return
+}
+
+async function updateUserEmail(username, email, userId){
+  await db.update(tables.users)
+    .set({username: username, email: email})
+    .where(
+        eq(tables.users.id, userId)
+      );
+  return
+}
+
+async function updateProfilePic(userId, newPFP){
+  await db.update(tables.users)
+    .set(tables.users.profileURL, newPFP)
+    .where(eq(tables.users.id, userId))
+  return
+}
+
 module.exports = {
   findUser,
   createUser,
+  setDeleteUser,
+  updateUserEmail,
+  updateProfilePic
 };
