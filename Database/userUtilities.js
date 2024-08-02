@@ -9,7 +9,7 @@ require("dotenv").config();
 const router = express.Router();
 import { setDeleteUserLinks } from "./queries/userLink";
 import { setDeleteTeamLink } from "./queries/teamLink";
-import { setDeleteUser, updateProfilePic, updateUserEmail } from "./queries/user";
+import { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail } from "./queries/user";
 
 const port = 2 + +process.env.SERVER_PORT;
 
@@ -80,9 +80,9 @@ router.post("/updateUser", async function (req, res) {
 
     // Duplicate Email Check
     if (email && email !== req.user.email) {
-      const dupeEmail = await isDupeEmail(email, req);
+      const canUseEmail = await emailAvailable(email);
 
-      if (dupeEmail) {
+      if (!canUseEmail) {
         res.status(409).json({ success: false, message: "Email already in use" });
         return;
       }
@@ -231,23 +231,6 @@ function validatePassword(password) {
     const forbiddenCheck = !forbiddenList.includes(password.toLowerCase());
 
     return lengthCheck && specialCheck && forbiddenCheck;
-}
-
-
-// Check for duplicate email
-async function isDupeEmail(dupeCheckEmail, req) {
-  const [testDupes] = await req.db.query(
-    `SELECT * FROM users WHERE email = :dupeCheckEmail AND deleted = 0;`,
-    {
-      dupeCheckEmail,
-    }
-  );
-
-  if (testDupes.length) {
-    return true;
-  }
-
-  return false;
 }
 
 //router

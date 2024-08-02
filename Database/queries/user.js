@@ -15,6 +15,19 @@ async function findUser(email) {
   return user;
 }
 
+async function emailAvailable(email) {
+  const [emailCount] = await db
+    .select({ count: count() })
+    .from(tables.users)
+    .where(and(eq(tables.users.email, email), eq(tables.users.deleted, 0)))
+    .limit(1);
+
+    if (emailCount.count > 0) {
+      return false;
+    }
+    return true;
+}
+
 /**
  * Get user data from database by id
  * @param {number} id
@@ -43,39 +56,41 @@ async function createUser({ email, username, hashedPassword, userCallLink }) {
   });
 }
 
-async function setDeleteUser(userID){
-  await db.update(tables.users)
-    .set({deleted: true})
+async function setDeleteUser(userID) {
+  await db
+    .update(tables.users)
+    .set({ deleted: true })
     .where(
       and(
         eq(tables.users.email, req.user.email),
         eq(tables.users.deleted, false)
-        )
-      );
-    return
+      )
+    );
+  return;
 }
 
-async function updateUserEmail(username, email, userId){
-  await db.update(tables.users)
-    .set({username: username, email: email})
-    .where(
-        eq(tables.users.id, userId)
-      );
-  return
+async function updateUserEmail(username, email, userId) {
+  await db
+    .update(tables.users)
+    .set({ username: username, email: email })
+    .where(eq(tables.users.id, userId));
+  return;
 }
 
-async function updateProfilePic(userId, newPFP){
-  await db.update(tables.users)
+async function updateProfilePic(userId, newPFP) {
+  await db
+    .update(tables.users)
     .set(tables.users.profileURL, newPFP)
-    .where(eq(tables.users.id, userId))
-  return
+    .where(eq(tables.users.id, userId));
+  return;
 }
 
 module.exports = {
+  emailAvailable,
   findUser,
   findUserById,
   createUser,
   setDeleteUser,
   updateUserEmail,
-  updateProfilePic
+  updateProfilePic,
 };
