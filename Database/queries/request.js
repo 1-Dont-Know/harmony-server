@@ -1,7 +1,6 @@
 const { eq, and, count, or } = require("drizzle-orm");
-const { db, tables } = require("./db.js");
+const { db, tables } = require("../db.js");
 const { createUid } = require("./general.js");
-
 
 /**
  * Checks if the user can send a team request to the team
@@ -102,17 +101,17 @@ async function canSendFriendRequest(user, target) {
         or(
           and(
             eq(tables.usersLinks.userId1, user.id),
-            eq(tables.usersLinks.userId2, target.id),
+            eq(tables.usersLinks.userId2, target.id)
           ),
           and(
             eq(tables.usersLinks.userId1, target.id),
-            eq(tables.usersLinks.userId2, user.id),
+            eq(tables.usersLinks.userId2, user.id)
           )
         ),
         eq(tables.usersLinks.deleted, 0)
       )
     );
-  
+
   if (friendsCount.count > 0) {
     return {
       message: "Already friends with this user",
@@ -128,11 +127,11 @@ async function canSendFriendRequest(user, target) {
         or(
           and(
             eq(tables.requests.senderId, user.id),
-            eq(tables.requests.receiverId, target.id),
+            eq(tables.requests.receiverId, target.id)
           ),
           and(
             eq(tables.requests.senderId, target.id),
-            eq(tables.requests.receiverId, user.id),
+            eq(tables.requests.receiverId, user.id)
           )
         ),
         eq(tables.requests.operation, "addFriend"),
@@ -150,7 +149,7 @@ async function canSendFriendRequest(user, target) {
   return {
     message: "Users are not friends",
     result: true,
-  }
+  };
 }
 
 /**
@@ -166,10 +165,10 @@ async function findIncomingTeamRequests(user) {
       and(
         or(
           eq(tables.usersLinks.userId1, userID),
-          eq(tables.usersLinks.userId2, userID),
+          eq(tables.usersLinks.userId2, userID)
         ),
         eq(tables.usersLinks.deleted, false)
-      ),
+      )
     );
   const requests = await db
     .select({
@@ -186,15 +185,15 @@ async function findIncomingTeamRequests(user) {
         eq(tables.requests.receiverId, user.id),
         eq(tables.requests.operation, "addToTeam"),
         eq(tables.requests.status, "pending"),
-        eq(tables.requests.deleted, 0),
+        eq(tables.requests.deleted, 0)
       )
-    )
+    );
 
   return requests;
 }
 
 /**
- * 
+ *
  * @param {import("./schema.js").User} user
  * @param {import("./schema.js").User} target
  * @param {string} data
@@ -215,7 +214,7 @@ async function createTeamRequest(user, target, data) {
     data: data,
     operation: "addToTeam",
     status: "pending",
-  })
+  });
 }
 
 module.exports = {
@@ -223,4 +222,4 @@ module.exports = {
   canSendFriendRequest,
   findIncomingTeamRequests,
   createTeamRequest,
-}
+};

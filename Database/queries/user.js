@@ -1,5 +1,5 @@
 const { eq, and } = require("drizzle-orm");
-const { db, tables } = require("./db.js");
+const { db, tables } = require("../db.js");
 
 /**
  * Get user data from database

@@ -1,5 +1,5 @@
 const { eq, and } = require("drizzle-orm");
-const { db, tables } = require("./db.js");
+const { db, tables } = require("../db.js");
 const { createUid } = require("./general.js");
 
 /**
@@ -207,4 +207,4 @@ module.exports = {
   deleteTeam,
   removeAllTeamLinks,
   findUsersInTeam,
-}
+};

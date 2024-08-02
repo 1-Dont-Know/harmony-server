@@ -1,5 +1,5 @@
 const { eq, and, count, or } = require("drizzle-orm");
-const { db, tables } = require("./db.js");
+const { db, tables } = require("../db.js");
 
 function createUid() {
   return Array.from(Array(254), () =>
