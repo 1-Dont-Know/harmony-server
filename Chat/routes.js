@@ -21,9 +21,10 @@ router.post("/load", async (req, res) => {
     }
 
     const [chats] = await req.db.query(
-      `SELECT chats.uid, chats.sentAt, users.username AS sender, chats.message, users.profileURL, chats.isFile, chats.edited, chats.fileName, chats.fileUID
+      `SELECT chats.uid, chats.sentAt, users.username AS sender, chats.message, users.profileURL, chats.isFile, chats.edited, files.name AS fileName, files.uid AS fileUID
       FROM teamschats AS chats
       JOIN users ON chats.messageUser = users.id
+      LEFT JOIN files ON chats.fileID = files.id
       WHERE chats.teamID = :teamId AND chats.deleted = 0;`,
       {
         teamId: teamId,

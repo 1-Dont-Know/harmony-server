@@ -1,20 +1,28 @@
+// const {
+//   serial,
+//   varchar,
+//   boolean,
+//   integer,
+//   blob,
+//   timestamp,
+//   tableCreator,
+//   table: core_table,
+// } = getCore();
+
 const {
   serial,
   varchar,
-  tinyint,
-  int,
-  varbinary,
+  boolean,
+  int: integer,
   timestamp,
-  mysqlTableCreator,
-  mysqlTable,
+  mysqlTableCreator: tableCreator,
+  mysqlTable: core_table,
 } = require("drizzle-orm/mysql-core");
 
 const table =
   process.env.VERCEL_ENV === "production"
-    ? mysqlTableCreator((name) => `harmony_${name}`)
-    : mysqlTable;
-
-// const mysqlTable = mysqlTableCreator((name) => `harmony_${name}`);
+    ? tableCreator((name) => `harmony_${name}`)
+    : core_table;
 
 const users = table("users", {
   id: serial("id").primaryKey(),
@@ -22,75 +30,73 @@ const users = table("users", {
   username: varchar("username", { length: 255 }),
   password: varchar("password", { length: 255 }),
   userCallLink: varchar("userCallLink", { length: 1020 }),
-  profileURL: varchar("profileURL", { length: 765 }),
-  deleted: tinyint("deleted"),
+  profileUrl: varchar("profileURL", { length: 765 }).default(""),
+  deleted: boolean("deleted").default(false),
 });
 
 const files = table("files", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  ownerID: int("ownerID"),
-  data: varbinary("data", { length: 1024 }),
-  deleted: tinyint("deleted"),
+  ownerID: integer("ownerID"),
+  deleted: boolean("deleted").default(false),
 });
 
 const requests = table("requests", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   timeCreated: timestamp("timeCreated").defaultNow(),
-  senderID: int("senderID"),
-  receiverID: int("receiverID"),
+  senderId: integer("senderID"),
+  receiverId: integer("receiverID"),
   data: varchar("data", { length: 765 }),
   operation: varchar("operation", { length: 255 }),
   status: varchar("status", { length: 255 }),
-  deleted: tinyint("deleted"),
   timeResolved: timestamp("timeResolved"),
+  deleted: boolean("deleted").default(false),
 });
 
 const teams = table("teams", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  ownerID: int("ownerID"),
-  name: varchar("name", { length: 255 }),
+  ownerId: integer("ownerID"),
   teamCallLink: varchar("teamCallLink", { length: 1020 }),
-  deleted: tinyint("deleted"),
+  deleted: boolean("deleted").default(false),
 });
 
 const teamsChats = table("teamschats", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
-  ownerID: int("ownerID"),
+  ownerId: integer("ownerID"),
   name: varchar("name", { length: 255 }),
   teamCallLink: varchar("teamCallLink", { length: 1020 }),
-  deleted: tinyint("deleted"),
+  deleted: boolean("deleted").default(false),
 });
 
 const teamsLinks = table("teamslinks", {
   id: serial("id").primaryKey(),
-  teamID: int("teamID"),
-  addUser: int("addUser"),
-  deleted: tinyint("deleted"),
+  teamId: integer("teamID"),
+  addUser: integer("addUser"),
+  deleted: boolean("deleted").default(false),
 });
 
 const usersChats = table("userschats", {
   id: serial("id").primaryKey(),
-  userSender: int("userSender"),
-  userReceiver: int("userReceiver"),
+  userSender: integer("userSender"),
+  userReceiver: integer("userReceiver"),
   sentAt: timestamp("sentAt").defaultNow(),
   message: varchar("message", { length: 1020 }),
-  isFile: tinyint("isFile"),
-  fileID: int("fileID"),
-  deleted: tinyint("deleted"),
+  isFile: boolean("isFile"),
+  fileId: integer("fileID"),
+  deleted: boolean("deleted").default(false),
 });
 
 const usersLinks = table("userslinks", {
   id: serial("id").primaryKey(),
-  userID1: int("userID1"),
-  userID2: int("userID2"),
-  blocked: tinyint("blocked"),
-  deleted: tinyint("deleted"),
+  userId1: integer("userID1"),
+  userId2: integer("userID2"),
+  blocked: boolean("blocked").default(false),
+  deleted: boolean("deleted").default(false),
 });
 
 /**
@@ -114,3 +120,47 @@ module.exports = {
   usersChats,
   usersLinks,
 };
+
+function getCore() {
+  if (process.env.VERCEL_ENV === "production") {
+    return postgresCore();
+  } else {
+    return mysqlCore();
+  }
+  function mysqlCore() {
+    const mysql = require("drizzle-orm/mysql-core");
+    const customBlob = mysql.customType({
+      dataType() {
+        return "blob";
+      },
+    });
+    return {
+      serial: mysql.serial,
+      varchar: mysql.varchar,
+      boolean: mysql.boolean,
+      integer: mysql.int,
+      blob: customBlob,
+      timestamp: mysql.timestamp,
+      tableCreator: mysql.mysqlTableCreator,
+      table: mysql.mysqlTable,
+    };
+  }
+  function postgresCore() {
+    const postgres = require("drizzle-orm/pg-core");
+    const customBytea = postgres.customType({
+      dataType() {
+        return "bytea";
+      },
+    });
+    return {
+      serial: postgres.serial,
+      varchar: postgres.varchar,
+      boolean: postgres.boolean,
+      integer: postgres.integer,
+      blob: customBytea,
+      timestamp: postgres.timestamp,
+      tableCreator: postgres.pgTableCreator,
+      table: postgres.pgTable,
+    };
+  }
+}

@@ -10,13 +10,15 @@
     "team": "nodemon ./API/teamManagement.js",
     "mail": "nodemon ./Mailer/mailer.js",
     "signaling": "nodemon ./Peer/server.js",
-    "start-all": "concurrently npm:start npm:user npm:team npm:signaling"
+    "start-all": "concurrently npm:start npm:user npm:team npm:signaling",
+    "migrate": "drizzle-kit generate && drizzle-kit migrate"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
     "@sendgrid/mail": "^8.1.1",
+    "@vercel/postgres": "^0.9.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.0.3",
     "cookie-parser": "^1.4.6",
