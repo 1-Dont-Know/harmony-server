@@ -3,7 +3,10 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
-const { createUser, findUser } = require("./queries");
+const {
+  createUser,
+  findUser
+} = require("./queries/user.js");
 require("dotenv").config();
 const router = express.Router()
 

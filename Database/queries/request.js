@@ -158,18 +158,6 @@ async function canSendFriendRequest(user, target) {
  * @returns {Promise<import("./schema.js").Request[]>}
  */
 async function findIncomingTeamRequests(user) {
-  await db
-    .update(usersLinks)
-    .set({ deleted: true })
-    .where(
-      and(
-        or(
-          eq(tables.usersLinks.userId1, userID),
-          eq(tables.usersLinks.userId2, userID)
-        ),
-        eq(tables.usersLinks.deleted, false)
-      )
-    );
   const requests = await db
     .select({
       uid: tables.requests.uid,
