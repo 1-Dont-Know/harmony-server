@@ -1,39 +1,13 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const mysql = require("mysql2/promise");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
+const { createUser, findUser } = require("./queries");
 require("dotenv").config();
 const router = express.Router()
 
 router.use(express.json({ limit: "50mb" }))
-
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
-
-router.use(async function (req, res, next) {
-    try {
-        req.db = await pool.getConnection();
-        req.db.connection.config.namedPlaceholders = true;
-
-        await req.db.query(`SET SESSION sql_mode = "TRADITIONAL"`);
-        await req.db.query(`SET time_zone = '-8:00'`);
-
-        await next();
-
-        req.db.release();
-    } catch (err) {
-        console.log(err);
-
-        if (req.db) req.db.release();
-        throw err;
-    }
-});
 
 router.use(express.json());
 router.use(cookieParser())
@@ -57,14 +31,20 @@ router.use((req, res, next) => {
 
 //Endpoints
 
-//Register User
+/**
+ * Register a new user
+ * METHOD: POST
+ * CREDENTIALS: FALSE
+ * BODY: {email: string, username: string, password: string}
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.post("/registerUser",
     async function (req, res) {
         try {
             // Duplicate Email Check
-            const dupeEmail = await isDupeEmail(req.body.email, req);
+            const existingUser = await findUser(req.body.email);
             
-            if (dupeEmail) {
+            if (existingUser) {
               res.status(409).json({ success: false, message: "Email already in use" });
               return;
             }      
@@ -76,14 +56,14 @@ router.post("/registerUser",
             //Create a personal call link/key
             const linkUID = Array.from(Array(254), () => Math.floor(Math.random() * 36).toString(36)).join('')
             const hashedLinkHead = await bcrypt.hash(req.body.email, 10)
-            const calllink = `${hashedLinkHead}/${linkUID}`
+            const callLink = `${hashedLinkHead}/${linkUID}`
 
             // Inserting new user into db
-            await req.db.query('INSERT INTO users (email, password, username , userCallLink , profileURL , deleted) VALUES (:email, :password, :username , :calllink , "" , false)', {
-                email: user.email,
-                password: user.securePassword,
-                username: req.body.username,
-                calllink: calllink
+            await createUser({
+              email: req.body.email,
+              username: req.body.username,
+              hashedPassword: hashPW,
+              userCallLink: callLink,
             });
 
             const accessToken = jwt.sign(user, process.env.JWT_KEY);
@@ -98,12 +78,18 @@ router.post("/registerUser",
     }
 );
 
-//Login User
+/**
+ * Login a user
+ * METHOD: POST
+ * CREDENTIALS: FALSE
+ * BODY: {email: string, password: string}
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.post("/loginUser",
     async function (req, res) {
         try {
             // Find User in DB
-            const [[user]] = await req.db.query('SELECT * FROM users WHERE email = :email AND deleted = 0', { email: req.body.email });
+            const user = await findUser(req.body.email);
 
             // Password Validation
             //const compare = user && validatePassword(req.body.password) && await bcrypt.compare(req.body.password, user.securePassword);
@@ -126,7 +112,12 @@ router.post("/loginUser",
     }
 );
 
-//Logout User
+/**
+ * Logout a user (clear cookie)
+ * METHOD: POST
+ * CREDENTIALS: FALSE
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.post("/logoutUser",
     async function (req, res) {
       try {
@@ -149,33 +140,6 @@ function validatePassword(password) {
     return lengthCheck && specialCheck && forbiddenCheck;
 }
 
-//retrieves users id from the stored cookie
-async function findUID(userObj, req) {
-    const [[queriedUser]] = await req.db.query(
-        `SELECT * FROM users WHERE email = :userEmail AND password = :userPW AND deleted = 0`,
-        {
-            "userEmail": userObj.email,
-            "userPW": userObj.securePassword
-        }
-    );
-    return queriedUser.id
-}
-
-// Check for duplicate email
-async function isDupeEmail(dupeCheckEmail, req) {
-  const [testDupes] = await req.db.query(
-    `SELECT * FROM users WHERE email = :dupeCheckEmail AND deleted = 0;`,
-    {
-      dupeCheckEmail,
-    }
-  );
-
-  if (testDupes.length) {
-    return true;
-  }
-
-  return false;
-}
 
 //router
 module.exports = router

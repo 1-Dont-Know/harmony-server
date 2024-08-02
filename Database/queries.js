@@ -10,7 +10,7 @@ function createUid() {
 /**
  * Get user data from database
  * @param {string} email
- * @returns {import("./schema.js").User | undefined}
+ * @returns {Promise<import("./schema.js").User | undefined>}
  */
 async function findUser(email) {
   const [user] = await db
@@ -22,10 +22,24 @@ async function findUser(email) {
 }
 
 /**
+ * Create a new user
+ * @param {{email: string, username: string, hashedPassword: string, userCallLink: string}} user
+ * @returns {Promise<void>}
+ */
+async function createUser({ email, username, hashedPassword, userCallLink }) {
+  await db.insert(tables.users).values({
+    email: email,
+    username: username,
+    password: hashedPassword,
+    userCallLink: userCallLink,
+  });
+}
+
+/**
  * Finds a team by uid and name
  * @param {string} teamUid
  * @param {string} teamName
- * @returns {import("./schema.js").Team | undefined}
+ * @returns {Promise<import("./schema.js").Team | undefined>}
  */
 async function findTeam(teamUid, teamName) {
   const [team] = await db
@@ -41,6 +55,7 @@ async function findTeam(teamUid, teamName) {
  * Create a new team adding it to the database
  * @param {import("./schema.js").User} user
  * @param {string} teamName
+ * @returns {Promise<void>}
  */
 async function createTeam(user, teamName) {
   const uid = createUid();
@@ -51,7 +66,6 @@ async function createTeam(user, teamName) {
     ownerID: user.id,
     teamCallLink: `${formattedName}/${uid}`,
     name: teamName,
-    deleted: false,
   });
 }
 
@@ -59,14 +73,13 @@ async function forceUserIntoTeam(user, team) {
   await db.insert(tables.teamsLinks).values({
     teamID: team.id,
     addUser: user.id,
-    deleted: false,
   });
 }
 
 /**
  * Finds all teams the user is a member of
  * @param {import("./schema.js").User} user
- * @returns {(import("./schema.js").Team & {owned: boolean})[]}
+ * @returns {Promise<(import("./schema.js").Team & {owned: boolean})[]>}
  */
 async function findJoinedTeams(user) {
   const ownedTeams = await db
@@ -77,7 +90,7 @@ async function findJoinedTeams(user) {
     })
     .from(tables.teams)
     .where(and(eq(tables.teams.ownerID, user.id), eq(tables.teams.deleted, 0)));
-  
+
   const joinedTeams = await db
     .select({
       name: tables.teams.name,
@@ -110,6 +123,7 @@ async function findJoinedTeams(user) {
  * Soft delete a user from a team
  * @param {import("./schema.js").User} targetUser
  * @param {import("./schema.js").Team} team
+ * @returns {Promise<void>}
  */
 async function removeUserFromTeam(targetUser, team) {
   await db
@@ -130,6 +144,7 @@ async function removeUserFromTeam(targetUser, team) {
  * Change team name
  * @param {import("./schema.js").Team} team
  * @param {string} newName
+ * @returns {Promise<void>}
  */
 async function changeTeamName(team, newName) {
   await db
@@ -141,6 +156,7 @@ async function changeTeamName(team, newName) {
 /**
  * Soft delete a team
  * @param {import("./schema.js").Team} team
+ * @returns {Promise<void>}
  */
 async function deleteTeam(team) {
   await db
@@ -154,6 +170,7 @@ async function deleteTeam(team) {
 /**
  * Soft delete all team links
  * @param {import("./schema.js").Team} team
+ * @returns {Promise<void>}
  */
 async function removeAllTeamLinks(team) {
   await db
@@ -172,7 +189,7 @@ async function removeAllTeamLinks(team) {
 /**
  * Finds all users in a team
  * @param {import("./schema.js").Team} team
- * @returns {import("./schema.js").User[]}
+ * @returns {Promise<import("./schema.js").User[]>}
  */
 async function findUsersInTeam(team) {
   const members = await db
@@ -216,6 +233,7 @@ async function findUsersInTeam(team) {
 
 module.exports = {
   findUser,
+  createUser,
   findTeam,
   createTeam,
   findJoinedTeams,
