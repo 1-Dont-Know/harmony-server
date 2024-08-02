@@ -9,8 +9,8 @@ const { createUid } = require("./general.js");
  * or if the user has a pending request
  * otherwise `true`
  *
- * @param {import("./schema.js").User} user
- * @param {import("./schema.js").Team} team
+ * @param {import("../schema.js").User} user
+ * @param {import("../schema.js").Team} team
  * @returns {Promise<{message: string, result: boolean}>}
  */
 async function canSendTeamRequest(user, team) {
@@ -88,8 +88,8 @@ async function canSendTeamRequest(user, team) {
  * or if the user has a pending friend request
  * otherwise `true`
  *
- * @param {import("./schema.js").User} user
- * @param {import("./schema.js").Team} target
+ * @param {import("../schema.js").User} user
+ * @param {import("../schema.js").Team} target
  * @returns {Promise<{message: string, result: boolean}>}
  */
 async function canSendFriendRequest(user, target) {
@@ -154,8 +154,8 @@ async function canSendFriendRequest(user, target) {
 
 /**
  * Finds a team request
- * @param {import("./schema.js").User} user
- * @returns {Promise<import("./schema.js").Request[]>}
+ * @param {import("../schema.js").User} user
+ * @returns {Promise<import("../schema.js").Request[]>}
  */
 async function findIncomingTeamRequests(user) {
   const requests = await db
@@ -182,8 +182,8 @@ async function findIncomingTeamRequests(user) {
 
 /**
  *
- * @param {import("./schema.js").User} user
- * @param {import("./schema.js").User} target
+ * @param {import("../schema.js").User} user
+ * @param {import("../schema.js").User} target
  * @param {string} data
  * `
  * {

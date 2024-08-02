@@ -4,9 +4,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const router = express.Router();
-const {
-  findUser,
-} = require("./queries/user.js");
+const { findUser } = require("./queries/user.js");
 const {
   createTeam,
   findJoinedTeams,
@@ -70,7 +68,7 @@ router.post("/createTeam", async function (req, res) {
   try {
     //Optional: Create a duplicate uid prevention function
     const user = await findUser(req.user.email);
-    createTeam(user, req.body.teamName);
+    await createTeam(user, req.body.teamName);
     res.status(200).json({ success: true });
   } catch (error) {
     console.log(error);
@@ -132,7 +130,7 @@ router.post("/removeTeamLink", async function (req, res) {
     const user = await findUser(req.user.email);
     const team = await findTeam(req.body.teamUID, req.body.teamName);
 
-    if (team.ownerID !== user.id) {
+    if (team.ownerId !== user.id) {
       res.status(400).json({ success: false, message: "User is not Owner" });
       return;
     }
@@ -159,7 +157,7 @@ router.post("/leaveTeam", async function (req, res) {
     const user = await findUser(req.user.email);
     const team = await findTeam(req.body.teamUID, req.body.teamName);
 
-    if (team.ownerID === user.id) {
+    if (team.ownerId === user.id) {
       res.status(400).json({
         success: false,
         message:
@@ -188,7 +186,7 @@ router.post("/updateTeamName", async function (req, res) {
     const user = await findUser(req.user.email);
     const team = await findTeam(req.body.teamUID, req.body.teamNameOld);
 
-    if (team.ownerID !== user.id) {
+    if (team.ownerId !== user.id) {
       res.status(400).json({
         success: false,
         message: "Only the owner of a team may change its name",
@@ -217,7 +215,7 @@ router.post("/deleteTeam", async function (req, res) {
     const user = await findUser(req.user.email);
     const team = await findTeam(req.body.teamUID, req.body.teamName);
 
-    if (team.ownerID !== user.id) {
+    if (team.ownerId !== user.id) {
       res.status(400).json({
         success: false,
         message: "Only the owner of a team may delete it",

@@ -38,7 +38,7 @@ const files = table("files", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  ownerID: integer("ownerID"),
+  ownerId: integer("ownerID"),
   deleted: boolean("deleted").default(false),
 });
 
