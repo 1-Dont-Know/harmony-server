@@ -6,6 +6,8 @@ require("dotenv").config();
 const router = express.Router();
 const {
   findUser,
+} = require("./queries/user.js");
+const {
   createTeam,
   findJoinedTeams,
   findTeam,
@@ -14,7 +16,7 @@ const {
   deleteTeam,
   findUsersInTeam,
   removeAllTeamLinks,
-} = require("./queries.js");
+} = require("./queries/team.js");
 
 router.use(express.json());
 router.use(cookieParser());

@@ -1,39 +1,6 @@
 const { eq, and } = require("drizzle-orm");
 const { db, tables } = require("./db.js");
-
-function createUid() {
-  return Array.from(Array(254), () =>
-    Math.floor(Math.random() * 36).toString(36)
-  ).join("");
-}
-
-/**
- * Get user data from database
- * @param {string} email
- * @returns {Promise<import("./schema.js").User | undefined>}
- */
-async function findUser(email) {
-  const [user] = await db
-    .select()
-    .from(tables.users)
-    .where(and(eq(tables.users.email, email), eq(tables.users.deleted, 0)))
-    .limit(1);
-  return user;
-}
-
-/**
- * Create a new user
- * @param {{email: string, username: string, hashedPassword: string, userCallLink: string}} user
- * @returns {Promise<void>}
- */
-async function createUser({ email, username, hashedPassword, userCallLink }) {
-  await db.insert(tables.users).values({
-    email: email,
-    username: username,
-    password: hashedPassword,
-    userCallLink: userCallLink,
-  });
-}
+const { createUid } = require("./general.js");
 
 /**
  * Finds a team by uid and name
@@ -50,7 +17,6 @@ async function findTeam(teamUid, teamName) {
 
   return team;
 }
-
 /**
  * Create a new team adding it to the database
  * @param {import("./schema.js").User} user
@@ -89,7 +55,7 @@ async function findJoinedTeams(user) {
       teamCallLink: tables.teams.teamCallLink,
     })
     .from(tables.teams)
-    .where(and(eq(tables.teams.ownerID, user.id), eq(tables.teams.deleted, 0)));
+    .where(and(eq(tables.teams.ownerId, user.id), eq(tables.teams.deleted, 0)));
 
   const joinedTeams = await db
     .select({
@@ -98,7 +64,7 @@ async function findJoinedTeams(user) {
       teamCallLink: tables.teams.teamCallLink,
     })
     .from(tables.teamsLinks)
-    .leftJoin(tables.teams, eq(tables.teamsLinks.teamID, tables.teams.id))
+    .leftJoin(tables.teams, eq(tables.teamsLinks.teamId, tables.teams.id))
     .where(
       and(
         eq(tables.teamsLinks.addUser, user.id),
@@ -134,7 +100,7 @@ async function removeUserFromTeam(targetUser, team) {
     .where(
       and(
         eq(tables.teamsLinks.addUser, targetUser.id),
-        eq(tables.teamsLinks.teamID, team.id),
+        eq(tables.teamsLinks.teamId, team.id),
         eq(tables.teamsLinks.deleted, 0)
       )
     );
@@ -180,7 +146,7 @@ async function removeAllTeamLinks(team) {
     })
     .where(
       and(
-        eq(tables.teamsLinks.teamID, team.id),
+        eq(tables.teamsLinks.teamId, team.id),
         eq(tables.teamsLinks.deleted, 0)
       )
     );
@@ -198,7 +164,7 @@ async function findUsersInTeam(team) {
     .leftJoin(tables.users, eq(tables.teamsLinks.addUser, tables.users.id))
     .where(
       and(
-        eq(tables.teamsLinks.teamID, team.id),
+        eq(tables.teamsLinks.teamId, team.id),
         eq(tables.teamsLinks.deleted, 0)
       )
     );
@@ -209,7 +175,7 @@ async function findUsersInTeam(team) {
       email: tables.users.email,
     })
     .from(tables.teams)
-    .leftJoin(tables.users, eq(tables.teams.ownerID, tables.users.id))
+    .leftJoin(tables.users, eq(tables.teams.ownerId, tables.users.id))
     .where(
       and(
         eq(tables.teams.id, team.id),
@@ -232,15 +198,13 @@ async function findUsersInTeam(team) {
 }
 
 module.exports = {
-  findUser,
-  createUser,
   findTeam,
   createTeam,
+  forceUserIntoTeam,
   findJoinedTeams,
   removeUserFromTeam,
   changeTeamName,
   deleteTeam,
   removeAllTeamLinks,
   findUsersInTeam,
-  forceUserIntoTeam,
-};
+}
