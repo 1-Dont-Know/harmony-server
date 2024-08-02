@@ -24,13 +24,12 @@ async function findTeam(teamUid, teamName) {
  * @returns {Promise<void>}
  */
 async function createTeam(user, teamName) {
-  console.log({ user });
   const uid = createUid();
   const formattedName = teamName.toLowerCase().replaceAll(" ", "-");
 
   await db.insert(tables.teams).values({
     uid: uid,
-    ownerId: user.id,
+    ownerID: user.id,
     teamCallLink: `${formattedName}/${uid}`,
     name: teamName,
   });
@@ -45,8 +44,8 @@ async function forceUserIntoTeam(user, team) {
 
 /**
  * Finds all teams the user is a member of
- * @param {import("../schema.js").User} user
- * @returns {Promise<(import("../schema.js").Team & {owned: boolean})[]>}
+ * @param {import("./schema.js").User} user
+ * @returns {Promise<(import("./schema.js").Team & {owned: boolean})[]>}
  */
 async function findJoinedTeams(user) {
   const ownedTeams = await db
@@ -89,8 +88,8 @@ async function findJoinedTeams(user) {
 
 /**
  * Soft delete a user from a team
- * @param {import("../schema.js").User} targetUser
- * @param {import("../schema.js").Team} team
+ * @param {import("./schema.js").User} targetUser
+ * @param {import("./schema.js").Team} team
  * @returns {Promise<void>}
  */
 async function removeUserFromTeam(targetUser, team) {
@@ -110,7 +109,7 @@ async function removeUserFromTeam(targetUser, team) {
 
 /**
  * Change team name
- * @param {import("../schema.js").Team} team
+ * @param {import("./schema.js").Team} team
  * @param {string} newName
  * @returns {Promise<void>}
  */
@@ -123,7 +122,7 @@ async function changeTeamName(team, newName) {
 
 /**
  * Soft delete a team
- * @param {import("../schema.js").Team} team
+ * @param {import("./schema.js").Team} team
  * @returns {Promise<void>}
  */
 async function deleteTeam(team) {
@@ -137,7 +136,7 @@ async function deleteTeam(team) {
 
 /**
  * Soft delete all team links
- * @param {import("../schema.js").Team} team
+ * @param {import("./schema.js").Team} team
  * @returns {Promise<void>}
  */
 async function removeAllTeamLinks(team) {
@@ -156,8 +155,8 @@ async function removeAllTeamLinks(team) {
 
 /**
  * Finds all users in a team
- * @param {import("../schema.js").Team} team
- * @returns {Promise<import("../schema.js").User[]>}
+ * @param {import("./schema.js").Team} team
+ * @returns {Promise<import("./schema.js").User[]>}
  */
 async function findUsersInTeam(team) {
   const members = await db

@@ -6,37 +6,14 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
 const cloudinary = require('../cloudinary/cloudinary')
 require("dotenv").config();
-const router = express.Router()
+const router = express.Router();
+import { setDeleteUserLinks } from "./queries/userLink";
+import { setDeleteTeamLink } from "./queries/teamLink";
+import { setDeleteUser, updateProfilePic, updateUserEmail } from "./queries/user";
 
 const port = 2 + +process.env.SERVER_PORT;
 
 const app = express();
-
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
-
-router.use(async function (req, res, next) {
-    try {
-        req.db = await pool.getConnection();
-        req.db.connection.config.namedPlaceholders = true;
-
-        await req.db.query(`SET SESSION sql_mode = "TRADITIONAL"`);
-        await req.db.query(`SET time_zone = '-8:00'`);
-
-        await next();
-
-        req.db.release();
-    } catch (err) {
-        console.log(err);
-
-        if (req.db) req.db.release();
-        throw err;
-    }
-});
 
 router.use(express.json());
 router.use(cookieParser())
@@ -79,37 +56,13 @@ function authenticateToken(req, res, next) {
 router.post("/deleteUser",
     async function (req, res) {
         try {
-            const userID = await findUID(req.user, req);
-
-            //remove all user links
-            await req.db.query(`
-            UPDATE userLinks
-            SET deleted = true
-            WHERE userID1 = :id OR usedID2 = :id AND deleted = false`,
-            {
-                id : userID
-            })
-
+            const userID = await findUser(req.user.email);
+            
             //remove all teams links
-            await req.db.query(`
-            UPDATE teamsLinks
-            SET deleted = true
-            WHERE addUser = :id AND deleted = false`,
-            {
-                id : userID
-            })
+            setDeleteUserLinks(userID)
+            setDeleteTeamLink(userID)
+            setDeleteUser(userID)
 
-            //
-
-            await req.db.query(`
-            UPDATE users
-            SET deleted = true
-            WHERE email = :email AND deleted = false
-            `,
-                {
-                    email : req.user.email
-                }
-            );
             res.status(200).json({ "success": true })
         } catch (error) {
             console.log(error);
@@ -122,7 +75,8 @@ router.post("/deleteUser",
 router.post("/updateUser", async function (req, res) {
   try {
     const { username, email } = req.body;
-    const userId = await findUID(req.user, req);
+    const user = await findUser(email);
+    const userId = user.id;
 
     // Duplicate Email Check
     if (email && email !== req.user.email) {
@@ -134,22 +88,8 @@ router.post("/updateUser", async function (req, res) {
       }
     }
 
-    await req.db.query(
-      `
-        UPDATE users
-        SET username = :username, email = :email
-        WHERE id = :userId
-      `,
-      {
-        userId,
-        username,
-        email
-      }
-    );
+    updateUserEmail(username, email, userId)
 
-    // Find User in DB
-    const [[user]] = await req.db.query('SELECT * FROM users WHERE email = :email AND deleted = 0', { email });
-    
     // Update cookie to reflect new email change
     const accessToken = jwt.sign({ "email": user.email, "username": username, "securePassword": user.password }, process.env.JWT_KEY);
     res.secureCookie("token", accessToken);
@@ -164,33 +104,14 @@ router.post("/updateUser", async function (req, res) {
 // Verify Peer Connection
 router.get("/peer/authenticate", express.json(), async (req, res) => {
   try {
-    const [[queriedUser]] = await req.db.query(
-      `SELECT * FROM users WHERE email = :userEmail AND password = :userPW AND deleted = 0`,
-      {
-        userEmail: req.user.email,
-        userPW: req.user.securePassword,
-      }
-    );
+    const queriedUser = findUser(req.user.email)
     const userID = queriedUser.id;
 
-    //get all owned teams
-    const [ownedTeamsArr] = await req.db.query(
-      `SELECT uid FROM teams WHERE OwnerID = :ownerID AND deleted = false`,
-      {
-        ownerID: userID,
-      }
-    );
-
-    //get all joined teams
-    const [joinedTeamsArr] = await req.db.query(
-      ` SELECT teams.uid from teamslinks left join teams on teamslinks.teamID = teams.ID WHERE teamslinks.addUser = :addUser and teamslinks.deleted = false`,
-      {
-        addUser: userID,
-      }
-    );
+    //get all owned and joined teams
+    const {owned, joined} = findJoinedTeams(queriedUser)
 
     //append teams together
-    const teamList = [...ownedTeamsArr, ...joinedTeamsArr];
+    const teamList = [...owned, ...joined];
 
     const token = jwt.sign(
       {
@@ -215,7 +136,7 @@ router.get("/peer/authenticate", express.json(), async (req, res) => {
 router.post("/uploadAvatar", async (req, res) => {
   try {
     const { image, avatarLink } = req.body;
-    const userId = await findUID(req.user, req);
+    const userId = await findUser(req.user.email);
 
     uploadOptions = {
       upload_preset: "unsigned_upload",
@@ -250,18 +171,7 @@ router.post("/uploadAvatar", async (req, res) => {
     );
 
     // Store avatar URL to database
-    await req.db.query(
-      `
-        UPDATE users
-        SET profileURL = :newPFP
-        WHERE id = :userId
-        `,
-      {
-        userId,
-        newPFP: uploadedImage.secure_url,
-      }
-    );
-
+    updateProfilePic(userId, newPFP)
     console.log(uploadedImage);
     res.status(200).json({ success: true, data: uploadedImage });
   } catch (error) {
@@ -274,7 +184,7 @@ router.post("/uploadAvatar", async (req, res) => {
 router.delete("/deleteAvatar", async (req, res) => {
   try {
     const { avatarLink } = req.body;
-    const userId = await findUID(req.user, req);
+    const userId = await findUser(req.user.email);
     
     if (avatarLink) {
       // Find the index of the substring 'user-avatar/'
@@ -290,16 +200,7 @@ router.delete("/deleteAvatar", async (req, res) => {
       cloudinary.uploader.destroy(publicId, { invalidate: true });
 
       // Delete image link from database
-      await req.db.query(
-        `
-          UPDATE users
-          SET profileURL = ""
-          WHERE id = :userId
-        `,
-        {
-          userId
-        }
-      );  
+      updateProfilePic(userId, "")
     }
 
     res.status(200).json({ success: true, message: "Avatar deleted" });
@@ -312,20 +213,10 @@ router.delete("/deleteAvatar", async (req, res) => {
 // Get user data
 router.get("/getUser", async (req, res) => {
   try {
-    const userId = await findUID(req.user, req);
-
-    const userData = await req.db.query(
-      `
-        SELECT email, username, profileURL,id
-        FROM users
-        WHERE id = :userId
-      `,
-      {
-        userId
-      }
-    );
-
-    res.status(200).json({ success: true, data: userData[0] });
+    const user = await findUser(req.user.email);
+    const userId = user.id;
+      
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.log(error);
     res.status(500).json({ "success": false, "message": "An error has occurred" });
@@ -342,17 +233,6 @@ function validatePassword(password) {
     return lengthCheck && specialCheck && forbiddenCheck;
 }
 
-//retrieves users id from the stored cookie
-async function findUID(userObj, req) {
-    const [[queriedUser]] = await req.db.query(
-        `SELECT * FROM users WHERE email = :userEmail AND password = :userPW AND deleted = 0`,
-        {
-            "userEmail": userObj.email,
-            "userPW": userObj.securePassword
-        }
-    );
-    return queriedUser.id
-}
 
 // Check for duplicate email
 async function isDupeEmail(dupeCheckEmail, req) {
