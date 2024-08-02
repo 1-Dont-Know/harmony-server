@@ -4,7 +4,7 @@ const { db, tables } = require("../db.js");
 /**
  * Get user data from database
  * @param {string} email
- * @returns {Promise<import("./schema.js").User | undefined>}
+ * @returns {Promise<import("../schema.js").User | undefined>}
  */
 async function findUser(email) {
   const [user] = await db
