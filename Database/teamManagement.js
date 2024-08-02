@@ -109,9 +109,9 @@ router.post("/addToTeam", async function (req, res) {
 router.get("/loadJoinedTeams", async function (req, res) {
   try {
     const user = await findUser(req.user.email);
-    const teamList = await findJoinedTeams(user);
+    const { owned, joined } = await findJoinedTeams(user);
 
-    res.status(200).json({ success: true, data: teamList });
+    res.status(200).json({ success: true, data: [...owned, ...joined] });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "An error has occurred" });

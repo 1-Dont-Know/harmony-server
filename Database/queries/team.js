@@ -81,9 +81,10 @@ async function findJoinedTeams(user) {
     element.owned = false;
   });
 
-  const teamsList = [...ownedTeams, ...joinedTeams];
-
-  return teamsList;
+  return {
+    owned: ownedTeams,
+    joined: joinedTeams,
+  };
 }
 
 /**
