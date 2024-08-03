@@ -28,11 +28,21 @@ async function createTeam(user, teamName) {
   const uid = createUid();
   const formattedName = teamName.toLowerCase().replaceAll(" ", "-");
 
-  await db.insert(tables.teams).values({
-    uid: uid,
-    ownerID: user.id,
-    teamCallLink: `${formattedName}/${uid}`,
-    name: teamName,
+  const team = await db
+    .insert(tables.teams)
+    .values({
+      uid: uid,
+      ownerID: user.id,
+      teamCallLink: `${formattedName}/${uid}`,
+      name: teamName,
+    })
+    .returning({
+      id: tables.teams.id,
+    });
+
+  await db.insert(tables.teamsLinks).values({
+    teamId: team.id,
+    addUser: user.id,
   });
 }
 
@@ -63,11 +73,12 @@ async function findJoinedTeam(user, teamUid, teamName) {
             eq(tables.teams.ownerId, user.id)
           ),
           eq(tables.teams.uid, teamUid),
-          eq(tables.teams.name, teamName),
+          eq(tables.teams.name, teamName)
         ),
         eq(tables.teams.deleted, false)
       )
-    ).limit(1);
+    )
+    .limit(1);
 
   return team;
 }
@@ -110,9 +121,15 @@ async function findJoinedTeams(user) {
     element.owned = false;
   });
 
+  const ownedTeamsUidMap = ownedTeams.map((team) => team.uid);
+
+  const filteredJoinedTeams = joinedTeams.filter(
+    (team) => !ownedTeamsUidMap.includes(team.uid)
+  );
+
   return {
     owned: ownedTeams,
-    joined: joinedTeams,
+    joined: filteredJoinedTeams,
   };
 }
 
@@ -215,9 +232,16 @@ async function findUsersInTeam(team) {
       )
     );
 
-  const membersMapped = members.map((entry) => {
-    return { ...entry, owner: false };
-  });
+  const membersMapped = members
+    .filter((entry) => {
+      return !owners.some(
+        (owner) =>
+          owner.username === entry.username && owner.email === entry.email
+      );
+    })
+    .map((entry) => {
+      return { ...entry, owner: false };
+    });
 
   const ownersMapped = owners.map((entry) => {
     return { ...entry, owner: true };
