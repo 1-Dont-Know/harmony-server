@@ -6,10 +6,10 @@ const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
 const cloudinary = require('../cloudinary/cloudinary')
 require("dotenv").config();
+const { setDeleteUserLinks } = require("./queries/userLink");
+const { setDeleteTeamLink } = require("./queries/teamLink");
+const { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail } = require("./queries/user");
 const router = express.Router();
-import { setDeleteUserLinks } from "./queries/userLink";
-import { setDeleteTeamLink } from "./queries/teamLink";
-import { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail } from "./queries/user";
 
 const port = 2 + +process.env.SERVER_PORT;
 
