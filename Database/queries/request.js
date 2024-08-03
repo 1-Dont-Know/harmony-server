@@ -15,7 +15,7 @@ const { findTeam } = require("./team.js");
  * @returns {Promise<{message: string, result: boolean}>}
  */
 async function canSendTeamRequest(target, team) {
-  const memberCount = await db
+  const [memberCount] = await db
     .select({ count: count() })
     .from(tables.teamsLinks)
     .where(
@@ -33,7 +33,7 @@ async function canSendTeamRequest(target, team) {
     };
   }
 
-  const ownerCount = await db
+  const [ownerCount] = await db
     .select({ count: count() })
     .from(tables.teams)
     .where(
@@ -94,7 +94,7 @@ async function canSendTeamRequest(target, team) {
  * @returns {Promise<{message: string, result: boolean}>}
  */
 async function canSendFriendRequest(user, target) {
-  const friendsCount = await db
+  const [friendsCount] = await db
     .select({ count: count() })
     .from(tables.usersLinks)
     .where(
@@ -120,7 +120,7 @@ async function canSendFriendRequest(user, target) {
     };
   }
 
-  const pendingFriendRequestCount = await db
+  const [pendingFriendRequestCount] = await db
     .select({ count: count() })
     .from(tables.requests)
     .where(
@@ -139,6 +139,8 @@ async function canSendFriendRequest(user, target) {
         eq(tables.requests.deleted, 0)
       )
     );
+
+    console.log({pendingFriendRequestCount});
 
   if (pendingFriendRequestCount.count > 0) {
     return {
