@@ -1,4 +1,4 @@
-const { eq, and } = require("drizzle-orm");
+const { eq, and, or } = require("drizzle-orm");
 const { db, tables } = require("../db.js");
 const { createUid } = require("./general.js");
 
@@ -17,6 +17,7 @@ async function findTeam(teamUid, teamName) {
 
   return team;
 }
+
 /**
  * Create a new team adding it to the database
  * @param {import("../schema.js").User} user
@@ -40,6 +41,35 @@ async function forceUserIntoTeam(user, team) {
     teamID: team.id,
     addUser: user.id,
   });
+}
+
+/**
+ * Finds a team by uid and name that the user is a member of
+ * @param {import("../schema.js").User} user
+ * @param {string} teamUid
+ * @param {string} teamName
+ * @returns {Promise<import("../schema.js").Team | undefined>}
+ */
+async function findJoinedTeam(user, teamUid, teamName) {
+  const [team] = await db
+    .select(tables.teams)
+    .from(tables.teamsLinks)
+    .innerJoin(tables.teams, eq(tables.teamsLinks.teamId, tables.teams.id))
+    .where(
+      and(
+        and(
+          or(
+            eq(tables.teamsLinks.addUser, user.id),
+            eq(tables.teams.ownerId, user.id)
+          ),
+          eq(tables.teams.uid, teamUid),
+          eq(tables.teams.name, teamName),
+        ),
+        eq(tables.teams.deleted, false)
+      )
+    ).limit(1);
+
+  return team;
 }
 
 /**
@@ -202,6 +232,7 @@ module.exports = {
   findTeam,
   createTeam,
   forceUserIntoTeam,
+  findJoinedTeam,
   findJoinedTeams,
   removeUserFromTeam,
   changeTeamName,

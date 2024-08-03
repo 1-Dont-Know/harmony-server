@@ -1,72 +1,73 @@
 const express = require("express");
 const router = express.Router();
 const { sockets } = require("../Peer/sockets.cjs");
+const { findUser } = require("../Database/queries/user");
+const { findJoinedTeam } = require("../Database/queries/team");
+const { findTeamChats, createTeamChat, findTeamChat, editTeamChat, deleteTeamChat } = require("../Database/queries/teamChat");
 
 router.use((req, res, next) => {
   req.socket = sockets.get(req.user.email).socket;
   next();
 });
 
+/**
+ * Loads chats for a team
+ * METHOD: POST
+ * CREDENTIALS: TRUE
+ * BODY: {teamUID: string, teamName: string}
+ * RESPONSE: {success: boolean, message?: string, data?: (TeamChat & {isOwner: boolean})[]}
+ */
 router.post("/load", async (req, res) => {
   try {
     const { teamUID, teamName } = req.body;
-    const userId = await findUserId(req);
-    const { teamId } = await findJoinedTeamId(userId, teamUID, teamName, req);
+    const user = await findUser(req.user.email);
+    const team = await findJoinedTeam(user, teamUID, teamName);
 
-    if (!teamId) {
+    if (!team) {
       res
         .status(403)
         .json({ success: false, message: "User does not have access to team" });
       return;
     }
 
-    const [chats] = await req.db.query(
-      `SELECT chats.uid, chats.sentAt, users.username AS sender, chats.message, users.profileURL, chats.isFile, chats.edited, files.name AS fileName, files.uid AS fileUID
-      FROM teamschats AS chats
-      JOIN users ON chats.messageUser = users.id
-      LEFT JOIN files ON chats.fileID = files.id
-      WHERE chats.teamID = :teamId AND chats.deleted = 0;`,
-      {
-        teamId: teamId,
-      }
-    );
+    const chats = await findTeamChats(team);
 
-    res.json({ success: true, data: chats });
+    const mappedChats = chats.map(chat => {
+      const isOwner = chat.ownerId === user.id;
+      return {
+        ...chat,
+        isOwner,
+      }
+    })
+
+    res.json({ success: true, data: mappedChats });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "An error has occurred" });
   }
 });
 
+/**
+ * Creates a new chat
+ * METHOD: POST
+ * CREDENTIALS: TRUE
+ * BODY: {message: string, teamUID: string, teamName: string, fileName?: string, fileUID?: string}
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.post("/create", async (req, res) => {
   try {
     const { message, teamUID, teamName, fileName, fileUID } = req.body;
-    const uid = Array.from(Array(254), () =>
-      Math.floor(Math.random() * 36).toString(36)
-    ).join("");
-    const userId = await findUserId(req);
-    const { teamId } = await findJoinedTeamId(userId, teamUID, teamName, req);
+    const user = await findUser(req.user.email);
+    const team = await findJoinedTeam(user, teamUID, teamName);
 
-    if (!teamId) {
-      console.error("user not in team");
+    if (!team) {
       res
         .status(403)
         .json({ success: false, message: "User does not have access to team" });
       return;
     }
 
-    await req.db.query(
-      `INSERT INTO teamschats (uid, teamID, messageUser, message, fileName, fileUID, edited, deleted)
-      VALUES (:uid, :teamId, :userId, :message, :fileName, :fileUID, 0, 0);`,
-      { 
-        uid,
-        teamId,
-        userId,
-        message,
-        fileName,
-        fileUID
-      }
-    );
+    await createTeamChat(user, team, message)
 
     req.socket.to("online:" + teamUID).emit("update:new_message", {
       team: teamUID,
@@ -82,26 +83,32 @@ router.post("/create", async (req, res) => {
 router.post("/edit", async (req, res) => {
   try {
     const { chatUID, teamUID, teamName, message } = req.body;
-    const userId = await findUserId(req);
-    const { teamId } = await findJoinedTeamId(userId, teamUID, teamName, req);
+    const user = await findUser(req.user.email);
+    const team = await findJoinedTeam(user, teamUID, teamName);
+    const chat = await findTeamChat(chatUID);
 
-    if (!teamId) {
+    if (!team) {
       res
         .status(403)
         .json({ success: false, message: "User does not have access to team" });
       return;
     }
 
-    await req.db.query(
-      `UPDATE teamschats SET message = :message, edited = 1
-      WHERE uid = :uid AND messageUser = :userId AND deleted = false;`,
-      {
-        message,
-        uid: chatUID,
-        userId: userId,
-      }
-    );
-    
+    if (!chat) {
+      res
+        .status(403)
+        .json({ success: false, message: "Could not edit message" });
+      return;
+    }
+
+    if (chat.ownerId !== user.id) {
+      res
+        .status(403)
+        .json({ success: false, message: "User does not have permission to edit this message" });
+      return;
+    }
+
+    await editTeamChat(chat, message);
 
     req.socket.to("online:" + teamUID).emit("update:edited_message", {
       team: teamUID,
@@ -109,6 +116,7 @@ router.post("/edit", async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: "An error has occurred" });
   }
 });
@@ -116,30 +124,32 @@ router.post("/edit", async (req, res) => {
 router.delete("/delete", async (req, res) => {
   try {
     const { chatUID, teamUID, teamName } = req.body;
-    const userId = await findUserId(req);
-    const { teamId } = await findJoinedTeamId(userId, teamUID, teamName, req);
+    const user = await findUser(req.user.email);
+    const team = await findJoinedTeam(user, teamUID, teamName);
+    const chat = await findTeamChat(chatUID);
 
-    if (!teamId) {
+    if (!team) {
       res
         .status(403)
         .json({ success: false, message: "User does not have access to team" });
       return;
     }
 
-    await req.db.query(
-      `UPDATE teamschats SET deleted = 1
-      WHERE uid = :uid
-      AND teamID = :teamId
-      AND (messageUser = :userId OR teamId IN (
-        SELECT id FROM teams WHERE ownerID = :userId
-      ))
-      AND deleted = 0;`,
-      {
-        uid: chatUID,
-        userId,
-        teamId,
-      }
-    );
+    if (!chat || chat.deleted) {
+      res
+        .status(403)
+        .json({ success: false, message: "Could not delete message" });
+      return;
+    }
+
+    if (chat.ownerId !== user.id && team.ownerId !== user.id) {
+      res
+        .status(403)
+        .json({ success: false, message: "User does not have permission to delete this message" });
+      return;
+    }
+
+    await deleteTeamChat(chat);
 
     req.socket.to("online:" + teamUID).emit("update:deleted_message", {
       team: teamUID,
@@ -151,39 +161,5 @@ router.delete("/delete", async (req, res) => {
     res.status(500).json({ success: false, message: "An error has occurred" });
   }
 });
-
-//Functions
-//retrieves users id from the stored cookie
-async function findUserId(req) {
-  const [[queriedUser]] = await req.db.query(
-    `SELECT * FROM users WHERE email = :userEmail AND password = :userPW AND deleted = 0`,
-    {
-      userEmail: req.user.email,
-      userPW: req.user.securePassword,
-    }
-  );
-  return queriedUser.id;
-}
-
-/**
- * finds team id from uid that user is in
- * @returns {Promise<{teamId?: number, ownerId?: number}>}
- */
-async function findJoinedTeamId(userId, teamUID, teamName, req) {
-  const [[team]] = await req.db.query(
-    `SELECT teamID AS teamId, teams.ownerID as ownerId
-    FROM teamslinks
-    JOIN teams ON teamslinks.teamID = teams.id
-    WHERE ((teamslinks.addUser = :userId OR teams.ownerID = :userId) AND teams.uid = :uid AND teams.name = :teamName)
-    AND teams.deleted = false;`,
-    {
-      userId: userId,
-      uid: teamUID,
-      teamName: teamName,
-    }
-  );
-
-  return team || {};
-}
 
 module.exports = router;

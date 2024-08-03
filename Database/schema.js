@@ -67,9 +67,13 @@ const teams = table("teams", {
 const teamsChats = table("teamschats", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
-  ownerId: integer("ownerID"),
-  name: varchar("name", { length: 255 }),
-  teamCallLink: varchar("teamCallLink", { length: 1020 }),
+  teamId: integer("teamId"),
+  ownerId: integer("ownerId"),
+  sentAt: timestamp("sentAt").defaultNow(),
+  message: varchar("message", { length: 1020 }),
+  isFile: boolean("isFile").default(false),
+  fileId: integer("fileID"),
+  edited: boolean("edited").default(false),
   deleted: boolean("deleted").default(false),
 });
 
