@@ -1,19 +1,13 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const mysql = require("mysql2/promise");
 const cookieParser = require("cookie-parser");
-const bcrypt = require("bcrypt");
 const cloudinary = require('../cloudinary/cloudinary')
 require("dotenv").config();
 const { setDeleteUserLinks } = require("./queries/userLink");
 const { setDeleteTeamLink } = require("./queries/teamLink");
 const { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail } = require("./queries/user");
 const router = express.Router();
-
-const port = 2 + +process.env.SERVER_PORT;
-
-const app = express();
 
 router.use(express.json());
 router.use(cookieParser())
