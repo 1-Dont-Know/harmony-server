@@ -140,8 +140,6 @@ async function canSendFriendRequest(user, target) {
       )
     );
 
-    console.log({pendingFriendRequestCount});
-
   if (pendingFriendRequestCount.count > 0) {
     return {
       message: "Friend request is already pending",
