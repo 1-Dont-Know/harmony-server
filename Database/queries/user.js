@@ -2,7 +2,7 @@ const { eq, and } = require("drizzle-orm");
 const { db, tables } = require("../db.js");
 
 /**
- * Get user data from database
+ * Get user data from database by email
  * @param {string} email
  * @returns {Promise<import("../schema.js").User | undefined>}
  */
@@ -22,10 +22,10 @@ async function emailAvailable(email) {
     .where(and(eq(tables.users.email, email), eq(tables.users.deleted, 0)))
     .limit(1);
 
-    if (emailCount.count > 0) {
-      return false;
-    }
-    return true;
+  if (emailCount.count > 0) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -38,6 +38,22 @@ async function findUserById(id) {
     .select()
     .from(tables.users)
     .where(and(eq(tables.users.id, id), eq(tables.users.deleted, 0)))
+    .limit(1);
+  return user;
+}
+
+/**
+ * Get user data from database by username
+ * @param {string} username
+ * @returns {Promise<import("../schema.js").User | undefined>}
+ */
+async function findUserByUsername(username) {
+  const [user] = await db
+    .select()
+    .from(tables.users)
+    .where(
+      and(eq(tables.users.username, username), eq(tables.users.deleted, 0))
+    )
     .limit(1);
   return user;
 }
@@ -89,6 +105,7 @@ module.exports = {
   emailAvailable,
   findUser,
   findUserById,
+  findUserByUsername,
   createUser,
   setDeleteUser,
   updateUserEmail,

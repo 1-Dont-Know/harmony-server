@@ -43,13 +43,47 @@ async function findFriends(user) {
 }
 
 /**
+ *
+ * @param {import("../schema.js").User} user
+ * @param {import("../schema.js").User | number} target
+ * @returns {Promise<boolean>}
+ */
+async function usersAreFriends(user, target) {
+  const targetId = typeof target === "number" ? target : target.id;
+  const [userLink] = await db
+    .select()
+    .from(tables.usersLinks)
+    .where(
+      and(
+        or(
+          and(
+            eq(tables.usersLinks.userId1, user.id),
+            eq(tables.usersLinks.userId2, targetId)
+          ),
+          and(
+            eq(tables.usersLinks.userId1, targetId),
+            eq(tables.usersLinks.userId2, user.id)
+          )
+        ),
+        eq(tables.usersLinks.deleted, false)
+      )
+    )
+    .limit(1);
+
+  const areFriends = userLink ? true : false;
+
+  return areFriends;
+}
+
+/**
  * Soft deleted a link between a user and another user
  * @param {import("../schema.js").User} user
  * @param {import("../schema.js").User} target
  * @returns {Promise<void>}
  */
 async function deleteFriendLink(user, target) {
-  await db.update(tables.usersLinks)
+  await db
+    .update(tables.usersLinks)
     .set({ deleted: true })
     .where(
       and(
@@ -58,7 +92,8 @@ async function deleteFriendLink(user, target) {
             eq(tables.usersLinks.userId1, user.id),
             eq(tables.usersLinks.userId2, target.id)
           ),
-          and(eq(tables.usersLinks.userId1, target.id),
+          and(
+            eq(tables.usersLinks.userId1, target.id),
             eq(tables.usersLinks.userId2, user.id)
           )
         ),
@@ -69,7 +104,7 @@ async function deleteFriendLink(user, target) {
 
 /**
  * Soft deletes all links between a user and other users
- * @param {number} userID 
+ * @param {number} userID
  * @returns {Promise<void>}
  */
 async function setDeleteUserLinks(userID) {
@@ -90,6 +125,7 @@ async function setDeleteUserLinks(userID) {
 
 module.exports = {
   findFriends,
+  usersAreFriends,
   deleteFriendLink,
   setDeleteUserLinks,
 };

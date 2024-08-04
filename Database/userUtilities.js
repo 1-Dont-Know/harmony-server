@@ -6,7 +6,7 @@ const cloudinary = require('../cloudinary/cloudinary')
 require("dotenv").config();
 const { setDeleteUserLinks } = require("./queries/userLink");
 const { setDeleteTeamLink } = require("./queries/teamLink");
-const { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail } = require("./queries/user");
+const { emailAvailable, setDeleteUser, updateProfilePic, updateUserEmail, findUser } = require("./queries/user");
 const router = express.Router();
 
 router.use(express.json());
