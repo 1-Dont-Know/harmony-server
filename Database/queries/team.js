@@ -86,7 +86,7 @@ async function findJoinedTeam(user, teamUid, teamName) {
 /**
  * Finds all teams the user is a member of
  * @param {import("./schema.js").User} user
- * @returns {Promise<(import("./schema.js").Team & {owned: boolean})[]>}
+ * @returns {Promise<{owned:(import("../schema.js").Team & {owned: boolean})[], joined:(import("../schema.js").Team & {owned: boolean})[]}>}
  */
 async function findJoinedTeams(user) {
   const ownedTeams = await db
