@@ -84,6 +84,34 @@ async function findJoinedTeam(user, teamUid, teamName) {
 }
 
 /**
+ * Finds a team only by uid that the user is a member of
+ * @param {import("../schema.js").User} user
+ * @param {string} teamUid
+ * @returns {Promise<import("../schema.js").Team | undefined>}
+ */
+async function findJoinedTeamByUid(user, teamUid) {
+  const [team] = await db
+    .select(tables.teams)
+    .from(tables.teamsLinks)
+    .innerJoin(tables.teams, eq(tables.teamsLinks.teamId, tables.teams.id))
+    .where(
+      and(
+        and(
+          or(
+            eq(tables.teamsLinks.addUser, user.id),
+            eq(tables.teams.ownerId, user.id)
+          ),
+          eq(tables.teams.uid, teamUid),
+        ),
+        eq(tables.teams.deleted, false)
+      )
+    )
+    .limit(1);
+
+  return team;
+}
+
+/**
  * Finds all teams the user is a member of
  * @param {import("./schema.js").User} user
  * @returns {Promise<{owned:(import("../schema.js").Team & {owned: boolean})[], joined:(import("../schema.js").Team & {owned: boolean})[]}>}
@@ -258,6 +286,7 @@ module.exports = {
   forceUserIntoTeam,
   findJoinedTeam,
   findJoinedTeams,
+  findJoinedTeamByUid,
   removeUserFromTeam,
   changeTeamName,
   deleteTeam,
