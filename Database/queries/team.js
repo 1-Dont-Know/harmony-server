@@ -28,7 +28,9 @@ async function createTeam(user, teamName) {
   const uid = createUid();
   const formattedName = teamName.toLowerCase().replaceAll(" ", "-");
 
-  const team = await db
+  // console.log(user);
+  // return;
+  const [team] = await db
     .insert(tables.teams)
     .values({
       uid: uid,
