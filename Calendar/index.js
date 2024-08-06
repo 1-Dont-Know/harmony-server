@@ -106,7 +106,6 @@ async function listCalendars() {
     if (!calendars || calendars.length === 0) {
       throw new Error('No calendars found.');
     }
-   
     const simplifiedCalendars = calendars.map((calendar) => ({
       name: calendar.summary,
       id: calendar.id
@@ -130,7 +129,7 @@ async function createCalendar(groupName) {
 }
 // Lists upcoming events on the selected calendar.
 async function listEvents(calendarName) {
-  console.log('test log:',new Date().toISOString());
+  // console.log('test log:',new Date().toISOString());
   const calendarIdObject = await getCalendarIdByName(calendarName);
   const calendarId = calendarIdObject.id;
   const auth = await authorize(); // Assuming `authorize()` returns the authenticated client
