@@ -245,7 +245,7 @@ function cleanFileName(dir) {
         extension: ""
       }
     }
-    const match = dir.match(/^([a-zA-Z0-9._-]+)(?: ?\((\d+)\))?\.([a-zA-Z0-9]+)$/)
+    const match = dir.match(/^([a-zA-Z0-9._-]+)(?: -id- ?(\d+))?(?: ?\((\d+)\))?\.([a-zA-Z0-9]+)$/)
 
     const fileName = match[1]
     const fileId = match[2] ? Number(match[2]) : null
