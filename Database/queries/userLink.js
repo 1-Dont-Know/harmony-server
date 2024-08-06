@@ -104,18 +104,18 @@ async function deleteFriendLink(user, target) {
 
 /**
  * Soft deletes all links between a user and other users
- * @param {number} userID
+ * @param {number} userId
  * @returns {Promise<void>}
  */
-async function setDeleteUserLinks(userID) {
+async function setDeleteUserLinks(userId) {
   await db
     .update(tables.usersLinks)
     .set({ deleted: true })
     .where(
       and(
         or(
-          eq(tables.usersLinks.userId1, userID),
-          eq(tables.usersLinks.userId2, userID)
+          eq(tables.usersLinks.userId1, userId),
+          eq(tables.usersLinks.userId2, userId)
         ),
         eq(tables.usersLinks.deleted, false)
       )

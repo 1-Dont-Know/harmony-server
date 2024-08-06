@@ -32,7 +32,7 @@ async function createTeam(user, teamName) {
     .insert(tables.teams)
     .values({
       uid: uid,
-      ownerID: user.id,
+      ownerId: user.id,
       teamCallLink: `${formattedName}/${uid}`,
       name: teamName,
     })
@@ -48,7 +48,7 @@ async function createTeam(user, teamName) {
 
 async function forceUserIntoTeam(user, team) {
   await db.insert(tables.teamsLinks).values({
-    teamID: team.id,
+    teamId: team.id,
     addUser: user.id,
   });
 }

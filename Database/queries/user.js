@@ -72,13 +72,13 @@ async function createUser({ email, username, hashedPassword, userCallLink }) {
   });
 }
 
-async function setDeleteUser(userID) {
+async function setDeleteUser(userId) {
   await db
     .update(tables.users)
     .set({ deleted: true })
     .where(
       and(
-        eq(tables.users.email, req.user.email),
+        eq(tables.users.id, userId),
         eq(tables.users.deleted, false)
       )
     );
@@ -96,7 +96,7 @@ async function updateUserEmail(username, email, userId) {
 async function updateProfilePic(userId, newPFP) {
   await db
     .update(tables.users)
-    .set(tables.users.profileURL, newPFP)
+    .set(tables.users.profileUrl, newPFP)
     .where(eq(tables.users.id, userId));
   return;
 }

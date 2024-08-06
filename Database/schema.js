@@ -23,7 +23,7 @@ const files = table("files", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  ownerId: integer("ownerId"),
+  ownerId: integer("ownerId").notNull(),
   deleted: boolean("deleted").default(false),
 });
 
@@ -31,7 +31,7 @@ const requests = table("requests", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   timeCreated: timestamp("timeCreated").defaultNow(),
-  senderId: integer("senderId"),
+  senderId: integer("senderId").notNull(),
   receiverId: integer("receiverId"),
   data: varchar("data", { length: 765 }),
   operation: varchar("operation", { length: 255 }),
@@ -44,7 +44,7 @@ const teams = table("teams", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
   name: varchar("name", { length: 255 }),
-  ownerId: integer("ownerId"),
+  ownerId: integer("ownerId").notNull(),
   teamCallLink: varchar("teamCallLink", { length: 1020 }),
   deleted: boolean("deleted").default(false),
 });
@@ -52,8 +52,8 @@ const teams = table("teams", {
 const teamsChats = table("teamschats", {
   id: serial("id").primaryKey(),
   uid: varchar("uid", { length: 255 }),
-  teamId: integer("teamId"),
-  ownerId: integer("ownerId"),
+  teamId: integer("teamId").notNull(),
+  ownerId: integer("ownerId").notNull(),
   sentAt: timestamp("sentAt").defaultNow(),
   message: varchar("message", { length: 1020 }),
   isFile: boolean("isFile").default(false),
@@ -64,15 +64,15 @@ const teamsChats = table("teamschats", {
 
 const teamsLinks = table("teamslinks", {
   id: serial("id").primaryKey(),
-  teamId: integer("teamId"),
+  teamId: integer("teamId").notNull(),
   addUser: integer("addUser"),
   deleted: boolean("deleted").default(false),
 });
 
 const usersChats = table("userschats", {
   id: serial("id").primaryKey(),
-  userSender: integer("userSender"),
-  userReceiver: integer("userReceiver"),
+  userSender: integer("userSender").notNull(),
+  userReceiver: integer("userReceiver").notNull(),
   sentAt: timestamp("sentAt").defaultNow(),
   message: varchar("message", { length: 1020 }),
   isFile: boolean("isFile"),
@@ -82,8 +82,8 @@ const usersChats = table("userschats", {
 
 const usersLinks = table("userslinks", {
   id: serial("id").primaryKey(),
-  userId1: integer("userId1"),
-  userId2: integer("userId2"),
+  userId1: integer("userId1").notNull(),
+  userId2: integer("userId2").notNull(),
   blocked: boolean("blocked").default(false),
   deleted: boolean("deleted").default(false),
 });
