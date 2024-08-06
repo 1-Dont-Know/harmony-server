@@ -43,10 +43,11 @@ The calendar features work using the Google Calendar API. The Harmony Client wil
 Refer to this link for further information regarding the Google Calendar API:
  - https://developers.google.com/calendar/api/quickstart/nodejs
 
+Refer to the Discord 'Server and API thread' for the Google account credentials if you wish to use the existing Google Account associated with this project. Otherwise, you may configure another Google account properly and generate your own credentials and token JSON files.
+
 
 ## Future
 
 - Team ownership transfer
-- Calendar
 - Team chat
   - load in sections using query params
