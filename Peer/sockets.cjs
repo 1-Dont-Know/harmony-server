@@ -39,6 +39,9 @@ function setup({ io }) {
       }
       try {
         const dbUser = await findUser(user.email);
+        if (!dbUser) {
+          return next(new Error("Invalid Token"));
+        }
         const {owned, joined} = await findJoinedTeams(dbUser);
 
         //append teams together
