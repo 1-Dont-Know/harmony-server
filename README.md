@@ -34,7 +34,7 @@ POSTGRES_URL=
 ### Database
 1. Navigate to "Storage" on your [Vercel Dashboard](https://vercel.com/dashboard)
 2. Create a new Postgres database (or use an existing one)
-3. Save `POSTGRES_URL` to `.env`
+3. Save the `POSTGRES_URL` variable in the ".env.local" tab to your `.env` file
 4. Run `npm run migrate`
 
 
