@@ -1,4 +1,4 @@
-const { eq, and } = require("drizzle-orm");
+const { eq, and, count } = require("drizzle-orm");
 const { db, tables } = require("../db.js");
 
 /**
@@ -96,7 +96,9 @@ async function updateUserEmail(username, email, userId) {
 async function updateProfilePic(userId, newPFP) {
   await db
     .update(tables.users)
-    .set(tables.users.profileUrl, newPFP)
+    .set({
+      profileUrl: newPFP,
+    })
     .where(eq(tables.users.id, userId));
   return;
 }

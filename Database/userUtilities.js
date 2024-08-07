@@ -69,7 +69,7 @@ router.post("/deleteUser",
 router.post("/updateUser", async function (req, res) {
   try {
     const { username, email } = req.body;
-    const user = await findUser(email);
+    const user = await findUser(req.user.email);
     const userId = user.id;
 
     // Duplicate Email Check
@@ -82,10 +82,10 @@ router.post("/updateUser", async function (req, res) {
       }
     }
 
-    updateUserEmail(username, email, userId)
+    await updateUserEmail(username, email, userId)
 
     // Update cookie to reflect new email change
-    const accessToken = jwt.sign({ "email": user.email, "username": username, "securePassword": user.password }, process.env.JWT_KEY);
+    const accessToken = jwt.sign({ "email": email, "username": username, "securePassword": user.password }, process.env.JWT_KEY);
     res.secureCookie("token", accessToken);
 
     res.status(200).json({ success: true, message: "Profile has been updated successfully" });
@@ -130,7 +130,7 @@ router.get("/peer/authenticate", express.json(), async (req, res) => {
 router.post("/uploadAvatar", async (req, res) => {
   try {
     const { image, avatarLink } = req.body;
-    const userId = await findUser(req.user.email);
+    const user = await findUser(req.user.email);
 
     uploadOptions = {
       upload_preset: "unsigned_upload",
@@ -160,13 +160,11 @@ router.post("/uploadAvatar", async (req, res) => {
         if (error) {
           console.log(error);
         }
-        console.log(result);
       }
     );
 
     // Store avatar URL to database
-    updateProfilePic(userId, newPFP)
-    console.log(uploadedImage);
+    await updateProfilePic(user.id, uploadedImage.secure_url)
     res.status(200).json({ success: true, data: uploadedImage });
   } catch (error) {
     console.log(error);
@@ -178,7 +176,7 @@ router.post("/uploadAvatar", async (req, res) => {
 router.delete("/deleteAvatar", async (req, res) => {
   try {
     const { avatarLink } = req.body;
-    const userId = await findUser(req.user.email);
+    const user = await findUser(req.user.email);
     
     if (avatarLink) {
       // Find the index of the substring 'user-avatar/'
@@ -194,7 +192,7 @@ router.delete("/deleteAvatar", async (req, res) => {
       cloudinary.uploader.destroy(publicId, { invalidate: true });
 
       // Delete image link from database
-      updateProfilePic(userId, "")
+      updateProfilePic(user.id, "")
     }
 
     res.status(200).json({ success: true, message: "Avatar deleted" });
