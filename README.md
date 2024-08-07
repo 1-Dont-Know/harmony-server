@@ -37,6 +37,7 @@ POSTGRES_URL=
 3. Save the `POSTGRES_URL` variable in the ".env.local" tab to your `.env` file
 4. Run `npm run migrate`
 
+
 ## Calendar
 
 The calendar features work using the Google Calendar API. The Harmony Client will talk to the Harmony Server, which contacts the Google API to request or submit calendar event data. In order for this to happen, the Harmony Server directory must contain two files: 'credentials.json' and 'token.json' in the Calendar directory.
