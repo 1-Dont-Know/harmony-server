@@ -1,148 +1,168 @@
 const express = require("express");
-const router = express.Router()
+const {
+  findUserChats,
+  createUserChat,
+  editUserChat,
+  deleteUserChat,
+} = require("../Database/queries/userChat");
+const {
+  findUser,
+  findUserByUsername,
+} = require("../Database/queries/user");
+const { usersAreFriends } = require("../Database/queries/userLink");
+const router = express.Router();
 
+/**
+ * Get all chats between two users
+ * METHOD: GET
+ * CREDENTIALS: TRUE
+ * QUERY: {peerUsername: string}
+ * RESPONSE: {success: boolean, message?: string, data?: UserChat[]}
+ */
 router.get("/load", async (req, res) => {
-  const {username,peerUsername} = req.query
-  const userId = await findUserId(req,username);
-  const peerUserId = await findUserId(req,peerUsername);
-    try {
-   const messages = await req.db.query(
-    `SELECT * FROM userschats
-    WHERE deleted = false 
-    AND ((userSender = ? AND userReciever = ?)
-        OR (userSender = ? AND userReciever = ?))
-    ORDER BY sentAt ASC;`,
-    [userId, peerUserId, peerUserId, userId]
-   );
-   res.json({ success: true, data: messages})
-}catch(error){
-res.status(500).json({error:'Fail to fetch chat messages'})
-   }
+  const { peerUsername } = req.query;
+  try {
+    const user = await findUser(req.user.email);
+    const target = await findUserByUsername(peerUsername);
+    const areFriends = await usersAreFriends(user, target.id);
+    if (!areFriends) {
+      res
+        .status(400)
+        .json({ success: false, message: "Target user not found" });
+      return;
+    }
+
+    const messages = await findUserChats(user, target, { sortOrder: "asc" });
+
+    res.json({ success: true, data: messages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Fail to fetch chat messages" });
+  }
 });
 
+/**
+ * Get all chats between two users
+ * METHOD: GET
+ * CREDENTIALS: TRUE
+ * QUERY: {peerUsername: string}
+ * RESPONSE: {success: boolean, message?: string, data?: UserChat[]}
+ */
 router.get("/loadlatest", async (req, res) => {
-  const {username,peerUsername} = req.query
-  const userId = await findUserId(req,username);
-  const peerUserId = await findUserId(req,peerUsername);
-    try {
-   const messages = await req.db.query(
-    `SELECT * FROM userschats
-    WHERE (userSender = ? AND userReciever = ?)
-    OR (userSender = ? AND userReciever = ?)
-    ORDER BY sentAt DESC
-    LIMIT 1;`,
-    [userId, peerUserId, peerUserId, userId]
-   );
-   res.json({ success: true, data: messages})
-}catch(error){
-res.status(500).json({error:'Fail to fetch chat messages'})
-   }
+  const { peerUsername } = req.query;
+  try {
+    const user = await findUser(req.user.email);
+    const target = await findUserByUsername(peerUsername);
+    const areFriends = await usersAreFriends(user, target.id);
+
+    if (!areFriends) {
+      res
+        .status(400)
+        .json({ success: false, message: "Target user not found" });
+      return;
+    }
+
+    const messages = await findUserChats(user, target, {
+      sortOrder: "desc",
+      limit: 1,
+    });
+
+    res.json({ success: true, data: messages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Fail to fetch chat messages" });
+  }
 });
 
-router.post("/send", async(req,res)=>{
-    const {userSender,userReciever,message} = req.body
-    const senderId = await findUserId(req,userSender);
-    const recieverId = await findUserId(req,userReciever);
-    try{
-        await req.db.query(
-        `INSERT INTO userschats (userSender,userReciever,message,sentAt,isFile,deleted)
-        VALUES(?,?,?,NOW(),0,0)`,
-        [senderId, recieverId, message]
-        )
-        res.json({success:true,message:'Message sent successfully'})
-    }
-    catch(error){
-      console.error("Error inserting message:", error);
-      res.status(500).json({error:'Fail to update messages to database'})
-    }
-    
-})
+/**
+ * Send a message between two users
+ * METHOD: POST
+ * CREDENTIALS: TRUE
+ * BODY: {userReciever: number, message: string}
+ * RESPONSE: {success: boolean, message?: string}
+ */
+router.post("/send", async (req, res) => {
+  const { userReciever, message } = req.body;
+  try {
+    const user = await findUser(req.user.email);
+    const target = await findUserByUsername(userReciever);
+    const areFriends = await usersAreFriends(user, target.id);
 
+    if (!areFriends) {
+      res
+        .status(400)
+        .json({ success: false, message: "Target user not found" });
+      return;
+    }
 
+    await createUserChat(user, target, message);
+
+    res.json({ success: true, message: "Message sent successfully" });
+  } catch (error) {
+    console.error("Error inserting message:", error);
+    res.status(500).json({ error: "Fail to update messages to database" });
+  }
+});
+
+/**
+ * Edit a message between two users
+ * METHOD: PUT
+ * CREDENTIALS: TRUE
+ * BODY: {userChatId: number, message: string}
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.put("/edit", async (req, res) => {
   try {
-    const {userChatId,message,userSender} = req.body
-    if (!userSender) {
-      res.status(400).json({ success: false, message: "Error: Missing userSender" });
-      return;
-    }
-    const senderId = await findUserId(req, userSender);
-    if (!senderId) {
-      res.status(404).json({ success: false, message: "Error: UserSender not found" });
-      return;
-    }
+    const { userChatId, message } = req.body;
+    const user = await findUser(req.user.email);
+
     if (!userChatId) {
       res
         .status(403)
         .json({ success: false, message: "Error: Missing chatID" });
       return;
     }
-   const response = await req.db.query(
-      `UPDATE userschats SET message = :message
-      WHERE id=:id AND userSender = :userSender AND deleted = false;`,
-      {
-        id:userChatId,
-        message,
-        userSender:senderId
-      }
-    );
-    res.json({ success: true});
+
+    await editUserChat(user, userChatId, message);
+    
+    res.json({ success: true });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: "Fail to update message" });
   }
 });
+
+/**
+ * Soft delete a message between two users
+ * METHOD: PUT
+ * CREDENTIALS: TRUE
+ * BODY: {userChatId: number}
+ * RESPONSE: {success: boolean, message?: string}
+ */
 router.put("/delete", async (req, res) => {
   try {
-    const { userChatId, userSender } = req.body;
-
-    // Check if userSender is provided
-    if (!userSender) {
-      return res.status(400).json({ success: false, message: "Error: Missing userSender" });
-    }
-
-    // Find the ID of the sender
-    const senderId = await findUserId(req, userSender);
-    if (!senderId) {
-      return res.status(404).json({ success: false, message: "Error: UserSender not found" });
-    }
+    const { userChatId } = req.body;
+    const user = await findUser(req.user.email);
 
     // Check if userChatId is provided
     if (!userChatId) {
-      return res.status(403).json({ success: false, message: "Error: Missing chatID" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Error: Missing chatID" });
     }
 
     // Update the database to mark the message as deleted
-    const response = await req.db.query(
-      `UPDATE userschats SET deleted = true
-      WHERE id=:id AND userSender = :userSender AND deleted = false;`,
-      {
-        id: userChatId,
-        userSender:senderId
-      }
-    );
+    await deleteUserChat(user, userChatId);
+
     // Send success response
     res.json({ success: true });
   } catch (error) {
     // Handle errors
     console.error("Error deleting message:", error);
-    res.status(500).json({ success: false, message: "Failed to delete message" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to delete message" });
   }
 });
 
-
-//Functions
-//retrieves users id from the stored cookie
-async function findUserId(req,username) {
-  const [[queriedUser]] = await req.db.query(
-    `SELECT * FROM users WHERE username=:username AND deleted = 0`,
-    {
-     username:username,
-    //  userSender:senderId
-    }
-  );
-  return queriedUser.id;
-}
-
-
-
-module.exports = router
+module.exports = router;

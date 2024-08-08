@@ -3,6 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { findUser } = require('../Database/queries/user');
+const { findJoinedTeamByUid, findJoinedTeam } = require('../Database/queries/team');
+const { createNewFile, findFile } = require('../Database/queries/file');
 
 //need to add a remove chat directory for when chats get deleted
 // need to use function for GET User id or GET team id
@@ -13,33 +16,11 @@ const uploadDir = path.join(__dirname, '../uploads')
 router.use("*", async (req, res, next) => {
   const [, , teamUid] = req.params[0].split("/");
   try {
-    const userID = await findUID(req.user, req);
-
-    //check if user owns team
-    const [[{ owns }]] = await req.db.query(
-      `SELECT COUNT(*) AS owns
-        FROM teams
-        WHERE uid = :uid
-        AND ownerID = :ownerID AND deleted = false;`,
-      {
-        uid: teamUid,
-        ownerID: userID,
-      }
-    );
-
-    //check if user has joined team
-    const [[{ joined }]] = await req.db.query(
-      `SELECT COUNT(*) AS joined FROM teamslinks
-        LEFT JOIN teams on teamslinks.teamID = teams.ID
-        WHERE teamslinks.addUser = :addUser AND teams.uid = :uid AND teamslinks.deleted = false;`,
-      {
-        uid: teamUid,
-        addUser: userID, 
-      }
-    );
+    const user = await findUser(req.user.email);
+    const joined = await findJoinedTeamByUid(user, teamUid);
 
     // send unauthorized if they are neither the owner nor member of the team
-    if (!owns && !joined) {
+    if (!joined) {
       return res.sendStatus(403)
     }
 
@@ -79,19 +60,12 @@ const upload = multer({ storage: storage });
 //3/21/24 stretch goal - will i need to a multiple file upload endpoint
 router.post('/upload/:chatId', upload.single('file'), async (req, res) => {
     try{
-        const userID = await findUID(req.user, req)
+        const user = await findUser(req.user.email);
         const {chatId} = req.params
         let fileNameSplit = req.file.filename.split(/-id-(.*?)\./)
         let fileUid = fileNameSplit[1]
 
-        await req.db.query(
-        `INSERT INTO files ( uid, name, ownerID, deleted)
-        VALUES ( :uid, :name, ${userID}, false)`,
-        {
-            uid: fileUid,
-            name: req.file.originalname
-        }
-        );
+        await createNewFile(user, fileUid, req.file.originalname);
 
       /* 
       5/22/24 TypeError: req.socket.to is not a function
@@ -112,26 +86,16 @@ router.post('/upload/:chatId', upload.single('file'), async (req, res) => {
 
 router.get('/getFileInfo/:chatId/:fileId', async (req, res) => {
     const {fileId} = req.params;
-    let getFileName = await req.db.query(
-        `SELECT name FROM
-        files WHERE 
-        files.uid = :fileId;`,
-        { fileId }
-    )
-    let cleanName = cleanFileName(getFileName[0][0]['name'])
+    const file = await findFile(fileId);
+    let cleanName = cleanFileName(file.name)
     res.json({'fileName': cleanName.name, 'fileExtension': cleanName.extension})
 })
  
 // File download route
 router.get('/download/:chatId/:fileId', async (req, res) => {
     const {chatId, fileId} = req.params; 
-    let getFileName = await req.db.query(
-        `SELECT name FROM
-        files WHERE 
-        files.uid = :fileId;`,
-        { fileId }
-    )
-    const {name, extension} = cleanFileName(getFileName[0][0]['name'])
+    const file = await findFile(fileId);
+    const {name, extension} = cleanFileName(file.name)
     const filePath = `${uploadDir}/${chatId}/${name}-id-${fileId}.${extension}`;
    
     //query SQL to get file name from file id
@@ -281,7 +245,7 @@ function cleanFileName(dir) {
         extension: ""
       }
     }
-    const match = dir.match(/^([a-zA-Z0-9._-]+)(?: ?\((\d+)\))?\.([a-zA-Z0-9]+)$/)
+    const match = dir.match(/^([a-zA-Z0-9._-]+)(?: -id- ?(\d+))?(?: ?\((\d+)\))?\.([a-zA-Z0-9]+)$/)
 
     const fileName = match[1]
     const fileId = match[2] ? Number(match[2]) : null
@@ -293,16 +257,4 @@ function cleanFileName(dir) {
       copy: fileCopy,
       extension: fileExtension
     }
-}
-
-//retrieves users id from the stored cookie
-async function findUID(userObj, req) {
-  const [[queriedUser]] = await req.db.query(
-      `SELECT * FROM users WHERE email = :userEmail AND password = :userPW AND deleted = 0`,
-      {
-          "userEmail": userObj.email,
-          "userPW": userObj.securePassword
-      }
-  );
-  return queriedUser.id
 }

@@ -25,12 +25,18 @@ SERVER_PORT=
 # The port the client is running on
 CLIENT_PORT=
 
-# mysql database
-DB_HOST=
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
+# vercel postgres database
+POSTGRES_URL=
 ```
+
+## Vercel
+
+### Database
+1. Navigate to "Storage" on your [Vercel Dashboard](https://vercel.com/dashboard)
+2. Create a new Postgres database (or use an existing one)
+3. Save the `POSTGRES_URL` variable in the ".env.local" tab to your `.env` file
+4. Run `npm run migrate`
+
 
 ## Calendar
 
