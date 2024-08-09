@@ -19,14 +19,11 @@ const uidMap = new Map();
  */
 function setup({ io }) {
   io.use((socket, next) => {
-    if (!socket.handshake.headers.cookie) {
+    if (!socket.handshake.auth.token) {
       return next(new Error("Invalid Token"))
     }
-    socket.handshake.cookies = Object.fromEntries(
-      socket.handshake.headers.cookie.split("; ").map((a) => a.split("="))
-    );
 
-    const token = socket.handshake.cookies.token;
+    const token = socket.handshake.auth.token;
 
     if (token == null) {
       return next(new Error("Invalid Token"));
