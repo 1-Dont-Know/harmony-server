@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const bcrypt = require("bcrypt");
@@ -14,19 +13,6 @@ router.use(express.json({ limit: "50mb" }))
 
 router.use(express.json());
 router.use(cookieParser())
-
-
-router.use((req, res, next) => {
-    res.secureCookie = (name, val, options = {}) => {
-        res.cookie(name, val, {
-            sameSite: "strict",
-            httpOnly: true,
-            secure: true,
-            ...options,
-        });
-    };
-    next();
-});
 
 //Endpoints
 
@@ -67,9 +53,7 @@ router.post("/registerUser",
 
             const accessToken = jwt.sign(user, process.env.JWT_KEY);
 
-            res.secureCookie("token", accessToken);
-            
-            res.status(201).json({ "success": true })
+            res.status(201).json({ "success": true, token: accessToken })
         } catch (error) {
             console.log(error);
             res.status(500).json({ "success": false, "message": "An error has occurred" });
@@ -101,9 +85,7 @@ router.post("/loginUser",
 
             const accessToken = jwt.sign({ "email": user.email, "username": user.username, "securePassword": user.password }, process.env.JWT_KEY);
 
-            res.secureCookie("token", accessToken)
-
-            res.status(200).json({ "success": true })
+            res.status(200).json({ "success": true, token: accessToken})
         } catch (error) {
             console.log(error);
             res.status(500).json({ "success": false, "message": "An error has occurred" });
@@ -120,7 +102,6 @@ router.post("/loginUser",
 router.post("/logoutUser",
     async function (req, res) {
       try {
-        res.clearCookie("token");
         res.status(200).json({ success: true });
       } catch (error) {
         console.log(error);

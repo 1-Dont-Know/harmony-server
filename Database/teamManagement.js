@@ -1,6 +1,4 @@
 const express = require("express");
-const cors = require("cors");
-const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const router = express.Router();
@@ -18,37 +16,6 @@ const {
 
 router.use(express.json());
 router.use(cookieParser());
-
-
-router.use((req, res, next) => {
-  res.secureCookie = (name, val, options = {}) => {
-    res.cookie(name, val, {
-      sameSite: "strict",
-      httpOnly: true,
-      secure: true,
-      ...options,
-    });
-  };
-  next();
-});
-
-function authenticateToken(req, res, next) {
-  const token = req.cookies.token;
-  if (token == null) {
-    return res.sendStatus(401);
-  }
-
-  jwt.verify(token, process.env.JWT_KEY, (err, user) => {
-    if (err) {
-      console.log(err);
-      return res.sendStatus(403);
-    }
-    req.user = user;
-    next();
-  });
-}
-
-router.use(authenticateToken);
 
 //Endpoints
 

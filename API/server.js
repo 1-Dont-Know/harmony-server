@@ -9,6 +9,7 @@ const apiRoutes = require("./api");
 const {setup: socketSetup} = require("../Peer/sockets.cjs")
 
 const port = process.env.PORT || process.env.SERVER_PORT;
+const clientOriginWhitelist = process.env.CLIENT_ORIGIN.split("|").map(a=>a.trim())
 
 const app = express();
 
@@ -32,8 +33,6 @@ const io = new socketIo.Server(server, {
   cors: {
     origin: corsOrigin,
     methods: ["GET", "POST"],
-    credentials: true,
-    cookie: true
   }
 })
 
