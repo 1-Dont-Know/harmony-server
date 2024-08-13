@@ -18,12 +18,7 @@ const {
 
 router.use(express.json());
 router.use(cookieParser());
-router.use(
-  cors({
-    origin: `http://localhost:${process.env.CLIENT_PORT}`,
-    credentials: true,
-  })
-);
+
 
 router.use((req, res, next) => {
   res.secureCookie = (name, val, options = {}) => {

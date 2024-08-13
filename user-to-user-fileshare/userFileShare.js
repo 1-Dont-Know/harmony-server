@@ -11,7 +11,7 @@ const { createNewFile, findFile } = require('../Database/queries/file');
 // need to use function for GET User id or GET team id
 // Set up multer for file uploads
 //define destination and filename convention
-const uploadDir = path.join(__dirname, '../uploads')
+// const uploadDir = path.join(__dirname, '../uploads')
 
 router.use("*", async (req, res, next) => {
   const [, , teamUid] = req.params[0].split("/");
