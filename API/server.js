@@ -22,7 +22,7 @@ app.use(express.json({ limit: "50mb" }));
 const originWhitelist = process.env.CLIENT_ORIGIN.split("|").map(origin => origin.trim())
 
 const corsOrigin = (origin, callback) => {
-  if (originWhitelist.includes(origin)) {
+  if (originWhitelist.includes(origin) || !origin) {
     callback(null, true)
   } else {
     callback(new Error("Not allowed by CORS"))
