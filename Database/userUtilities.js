@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const cloudinary = require('../cloudinary/cloudinary')
@@ -11,40 +10,6 @@ const router = express.Router();
 
 router.use(express.json());
 router.use(cookieParser())
-router.use(cors({
-    origin: `http://localhost:${process.env.CLIENT_PORT}`,
-    credentials: true,
-}));
-
-
-router.use((req, res, next) => {
-    res.secureCookie = (name, val, options = {}) => {
-        res.cookie(name, val, {
-            sameSite: "strict",
-            httpOnly: true,
-            secure: true,
-            ...options,
-        });
-    };
-    next();
-});
-
-//Endpoints
-
-//Private Endpoints
-//Authorize JWT
-function authenticateToken(req, res, next) {
-    const token = req.cookies.token
-    if (token == null) { return res.sendStatus(401) };
-  
-    jwt.verify(token, process.env.JWT_KEY, (err, user) => {
-      if (err) { console.log(err); return res.sendStatus(403) }
-      req.user = user;
-      next()
-    })
-  }
-  
-  router.use(authenticateToken);
 
 //Delete User
 router.post("/deleteUser",
@@ -86,9 +51,8 @@ router.post("/updateUser", async function (req, res) {
 
     // Update cookie to reflect new email change
     const accessToken = jwt.sign({ "email": email, "username": username, "securePassword": user.password }, process.env.JWT_KEY);
-    res.secureCookie("token", accessToken);
 
-    res.status(200).json({ success: true, message: "Profile has been updated successfully" });
+    res.status(200).json({ success: true, message: "Profile has been updated successfully", token: accessToken});
   } catch (error) {
     console.log(error);
     res.status(500).json({ "success": false, "message": "An error has occurred" });

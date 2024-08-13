@@ -26,8 +26,13 @@ router.use("/api/database" , userToUserRoutes)
 router.use("/api/database" , userUtilsRoutes)
 router.use("/files", fileRoutes)
 
+
 function authenticateToken(req, res, next) {
-  const token = req.cookies.token;
+  const value = req.headers.authorization;
+  if (!value || !value.startsWith("Bearer ")) {
+    return res.sendStatus(401);
+  }
+  const token = value.slice(7);
   if (token == null) {
     return res.sendStatus(401);
   }

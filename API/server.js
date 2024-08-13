@@ -9,6 +9,7 @@ const apiRoutes = require("./api");
 const {setup: socketSetup} = require("../Peer/sockets.cjs")
 
 const port = process.env.PORT || process.env.SERVER_PORT;
+const clientOriginWhitelist = process.env.CLIENT_ORIGIN.split("|").map(a=>a.trim())
 
 const app = express();
 
@@ -18,12 +19,19 @@ const userChatSocket = require("../Peer/userChatSocket.js");
 
 app.use(express.json({ limit: "50mb" }));
 
+const corsOrigin = {
+  origin: (origin, callback) => {
+    if (clientOriginWhitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback()
+    }
+  }
+}
+
 const io = new socketIo.Server(server, {
   cors: {
-    origin: "http://localhost:"+process.env.CLIENT_PORT,
     methods: ["GET", "POST"],
-    credentials: true,
-    cookie: true
   }
 })
 
@@ -32,12 +40,7 @@ socketSetup({io})
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: `http://localhost:${process.env.CLIENT_PORT}`,
-    credentials: true,
-  })
-);
+app.use(cors());
 
 app.use((req, res, next) => {
   res.secureCookie = (name, val, options = {}) => {
