@@ -5,10 +5,10 @@ const { findUser } = require("../Database/queries/user");
 const { findJoinedTeam } = require("../Database/queries/team");
 const { findTeamChats, createTeamChat, findTeamChat, editTeamChat, deleteTeamChat } = require("../Database/queries/teamChat");
 
-router.use((req, res, next) => {
-  req.socket = sockets.get(req.user.email).socket;
-  next();
-});
+// router.use((req, res, next) => {
+//   req.socket = sockets.get(req.user.email)?.socket;
+//   next();
+// });
 
 /**
  * Loads chats for a team
@@ -69,9 +69,9 @@ router.post("/create", async (req, res) => {
 
     await createTeamChat(user, team, message)
 
-    req.socket.to("online:" + teamUID).emit("update:new_message", {
-      team: teamUID,
-    });
+    // req.socket.to("online:" + teamUID).emit("update:new_message", {
+    //   team: teamUID,
+    // });
 
     res.json({ success: true });
   } catch (error) {
@@ -110,9 +110,9 @@ router.post("/edit", async (req, res) => {
 
     await editTeamChat(chat, message);
 
-    req.socket.to("online:" + teamUID).emit("update:edited_message", {
-      team: teamUID,
-    });
+    // req.socket.to("online:" + teamUID).emit("update:edited_message", {
+    //   team: teamUID,
+    // });
 
     res.json({ success: true });
   } catch (error) {
@@ -151,9 +151,9 @@ router.delete("/delete", async (req, res) => {
 
     await deleteTeamChat(chat);
 
-    req.socket.to("online:" + teamUID).emit("update:deleted_message", {
-      team: teamUID,
-    });
+    // req.socket.to("online:" + teamUID).emit("update:deleted_message", {
+    //   team: teamUID,
+    // });
 
     res.json({ success: true });
   } catch (error) {

@@ -166,11 +166,11 @@ router.post('/duplicate/:chatId/:fileName', async (req, res) => {
         fs.copyFileSync(sourcePath, destPath)
     }
 
-    req.socket.to("online:" + chatId).emit("update:file_added", {
-      team: chatId,
-      filename: fileName,
-      user: req.user.username
-    });
+    // req.socket.to("online:" + chatId).emit("update:file_added", {
+    //   team: chatId,
+    //   filename: fileName,
+    //   user: req.user.username
+    // });
 
     return res.json({'status': 200, 'message': 'Copy success', 'file': fileName})
 })
@@ -183,11 +183,11 @@ router.delete('/delete/:chatId/:fileName', (req, res) => {
         
         fs.unlinkSync(filePath);
 
-        req.socket.to("online:" + chatId).emit("update:file_removed", {
-          team: chatId,
-          filename: fileName,
-          user: req.user.username
-        });
+        // req.socket.to("online:" + chatId).emit("update:file_removed", {
+        //   team: chatId,
+        //   filename: fileName,
+        //   user: req.user.username
+        // });
         return res.json({'message': 'success', 'status': 200})
 
     } catch(err) {
