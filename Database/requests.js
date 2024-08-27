@@ -17,10 +17,10 @@ const {
 } = require("./queries/request.js");
 const { findTeam } = require("./queries/team.js");
 
-router.use((req, res, next) => {
-  req.socket = sockets.get(req.user.email)?.socket;
-  next();
-});
+// router.use((req, res, next) => {
+//   req.socket = sockets.get(req.user.email)?.socket;
+//   next();
+// });
 
 
 //Endpoints
@@ -195,11 +195,11 @@ router.post("/resolveIncomingFriendRequest", async function (req, res) {
     if (!acceptedCheck) {
       await declineRequest(req.body.requestUID);
 
-      req.socket
-        .to(sockets.get(receiver.email).socket.id)
-        .emit("update:reject_friend_request", {
-          username: req.user.username || req.user.email,
-        });
+      // req.socket
+      //   .to(sockets.get(receiver.email).socket.id)
+      //   .emit("update:reject_friend_request", {
+      //     username: req.user.username || req.user.email,
+      //   });
 
       res.status(200).json({ success: true });
       return;
@@ -207,15 +207,15 @@ router.post("/resolveIncomingFriendRequest", async function (req, res) {
       await acceptFriendRequest(request, sender, receiver);
 
       // ping sender to update their friends list
-      req.socket
-        .to(sockets.get(sender.email).socket.id)
-        .emit("update:accept_friend_request", {
-          username: req.user.username || req.user.email,
-        });
+      // req.socket
+      //   .to(sockets.get(sender.email).socket.id)
+      //   .emit("update:accept_friend_request", {
+      //     username: req.user.username || req.user.email,
+      //   });
 
-      req.socket.emit("update:accept_friend_request", {
-        username: req.user.username || req.user.email,
-      });
+      // req.socket.emit("update:accept_friend_request", {
+      //   username: req.user.username || req.user.email,
+      // });
 
       res.status(200).json({ success: true });
     }

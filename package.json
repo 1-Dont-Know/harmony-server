@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon ./API/server.js",
+    "start": "node ./API/server.js",
+    "dev": "nodemon ./API/server.js",
+    "vercel-build": "echo hello",
     "signaling": "nodemon ./Peer/server.js",
     "migrate": "drizzle-kit generate && drizzle-kit migrate"
   },
@@ -13,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
-    "@sendgrid/mail": "^8.1.1",
+    "@sendgrid/mail": "^7.7.0",
     "@vercel/postgres": "^0.9.0",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.0.3",

@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "use": "@vercel/node@latest",
+      "src": "/api/index.js",
+      "config": { "zeroConfig": true }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api"
+    }
+  ]
+}

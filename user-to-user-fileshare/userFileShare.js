@@ -11,7 +11,7 @@ const { createNewFile, findFile } = require('../Database/queries/file');
 // need to use function for GET User id or GET team id
 // Set up multer for file uploads
 //define destination and filename convention
-const uploadDir = path.join(__dirname, '../uploads')
+// const uploadDir = path.join(__dirname, '../uploads')
 
 router.use("*", async (req, res, next) => {
   const [, , teamUid] = req.params[0].split("/");
@@ -166,11 +166,11 @@ router.post('/duplicate/:chatId/:fileName', async (req, res) => {
         fs.copyFileSync(sourcePath, destPath)
     }
 
-    req.socket.to("online:" + chatId).emit("update:file_added", {
-      team: chatId,
-      filename: fileName,
-      user: req.user.username
-    });
+    // req.socket.to("online:" + chatId).emit("update:file_added", {
+    //   team: chatId,
+    //   filename: fileName,
+    //   user: req.user.username
+    // });
 
     return res.json({'status': 200, 'message': 'Copy success', 'file': fileName})
 })
@@ -183,11 +183,11 @@ router.delete('/delete/:chatId/:fileName', (req, res) => {
         
         fs.unlinkSync(filePath);
 
-        req.socket.to("online:" + chatId).emit("update:file_removed", {
-          team: chatId,
-          filename: fileName,
-          user: req.user.username
-        });
+        // req.socket.to("online:" + chatId).emit("update:file_removed", {
+        //   team: chatId,
+        //   filename: fileName,
+        //   user: req.user.username
+        // });
         return res.json({'message': 'success', 'status': 200})
 
     } catch(err) {

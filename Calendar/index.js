@@ -3,7 +3,6 @@ const path = require('path');
 const process = require('process');
 const {authenticate} = require('@google-cloud/local-auth');
 const {google} = require('googleapis');
-const { log } = require('console');
 
 const TOKEN_PATH = path.join(process.cwd(), './Calendar/token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), './Calendar/credentials.json');
